@@ -171,7 +171,7 @@ struct IgmpV3MembershipReportHeader
     uint16_t number_of_group_records;
 } CLICK_SIZE_PACKED_ATTRIBUTE;
 
-/// Defines possible IGMP version 3 record types.
+/// Defines possible IGMP version 3 group record types.
 enum class IgmpV3GroupRecordType : uint8_t
 {
     /// mode_is_include - indicates that the interface has a
