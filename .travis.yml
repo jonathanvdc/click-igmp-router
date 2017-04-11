@@ -28,7 +28,7 @@ before_install:
     # Build click.
     - make
     # Add click to the path.
-    - export PATH="$PATH:$(pwd)/userlevel/click"
+    - export PATH="$PATH:$(pwd)/userlevel"
     - popd
 
 script:
