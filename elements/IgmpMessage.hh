@@ -1,7 +1,10 @@
-#pragma once
+#ifndef IGMP_MESSAGE
+#define IGMP_MESSAGE
 
 #include <click/config.h>
 #include <clicknet/ip.h>
+
+CLICK_DECLS
 
 /// The type of IGMP membership query messages.
 const uint8_t igmp_membership_query_type = 0x11;
@@ -69,7 +72,7 @@ struct IgmpMembershipQueryHeader
     /// The Group Address field is set to zero when sending a General Query,
     /// and set to the IP multicast address being queried when sending a
     /// Group-Specific Query or Group-and-Source-Specific Query).
-    IPAddress group_address;
+    uint32_t group_address : 32;
 
     /// The Resv field is set to zero on transmission, and ignored on
     /// reception.
@@ -173,7 +176,7 @@ inline uint16_t update_igmp_checksum(const unsigned char *data, size_t size)
 {
     auto header = (IgmpMembershipQueryHeader *)data;
     header->checksum = 0;
-    header->checksum = click_in_cksum(data_copy, (int)size);
+    header->checksum = click_in_cksum(data, (int)size);
     return header->checksum;
 }
 
@@ -186,3 +189,7 @@ inline uint16_t compute_igmp_checksum(const unsigned char *data, size_t size)
     delete[] data_copy;
     return result;
 }
+
+CLICK_ENDDECLS
+
+#endif

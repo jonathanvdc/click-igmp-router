@@ -30,6 +30,8 @@ before_install:
     # Add click to the path.
     - export PATH="$PATH:$(pwd)/userlevel"
     - popd
+    # Include local elements and re-make click.
+    - make
 
 script:
     # Run the script for half a minute.
