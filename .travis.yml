@@ -33,4 +33,4 @@ before_install:
 
 script:
     # Run the script for half a minute.
-    - timeout 30 click -p 1234 scripts/ipnetwork.click
+    - timeout --preserve-status 30 click -p 1234 scripts/ipnetwork.click
