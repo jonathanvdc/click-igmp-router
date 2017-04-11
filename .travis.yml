@@ -1,0 +1,36 @@
+# We are (unfortunately) dealing with a C++ project.
+language: cpp
+compiler: gcc
+
+# Use Ubuntu 14.04.5 LTS (Trusty Tahr) instead of Ubuntu 12.04.5 LTS (Precise Pangolin)
+dist: trusty
+
+# We're going to need cmake and boost.
+addons:
+    apt:
+        sources:
+            - ubuntu-toolchain-r-test
+        packages:
+            - gcc-5
+            - g++-5
+
+before_install:
+    # Use GCC 5.
+    - if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi
+    # Print the GCC version.
+    - $CXX --version
+
+    # Download, unzip and configure click.
+    - chmod +x ./download-click.sh
+    - ./download-click.sh
+
+    - pushd click-2.0.1
+    # Build click.
+    - make
+    # Add click to the path.
+    - export PATH="$PATH:$(pwd)/userlevel/click"
+    - popd
+
+script:
+    # Run the script for half a minute.
+    - timeout 30 click -p 1234 scripts/ipnetwork.click
