@@ -169,10 +169,11 @@ struct IgmpV3MembershipReportHeader
 } CLICK_SIZE_PACKED_ATTRIBUTE;
 
 /// Computes an IGMP checksum for the IGMP message with the given data and size.
-uint16_t compute_igmp_checksum(char *data, size_t size)
+uint16_t compute_igmp_checksum(const char *data, size_t size)
 {
     size_t size_in_shorts = size / 2;
-    uint16_t* data_copy = new uint16_t[size_in_shorts];
+    char *data_copy = new char[size_in_shorts];
+    uint16_t *data_in_shorts = (uint16_t *)data_copy;
     memcpy(data_copy, data, size);
 
     auto header = (IgmpMembershipQueryHeader *)data_copy;
@@ -181,7 +182,7 @@ uint16_t compute_igmp_checksum(char *data, size_t size)
     uint16_t ones_complement_sum = 0;
     for (size_t i = 0; i < size_in_shorts; i++)
     {
-        ones_complement_sum += ~ntohs(data_copy[i]);
+        ones_complement_sum += ~ntohs(data_in_shorts[i]);
     }
 
     delete[] data_copy;
