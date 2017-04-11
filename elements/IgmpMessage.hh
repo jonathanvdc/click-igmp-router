@@ -171,6 +171,60 @@ struct IgmpV3MembershipReportHeader
     uint16_t number_of_group_records;
 } CLICK_SIZE_PACKED_ATTRIBUTE;
 
+/// Defines possible IGMP version 3 record types.
+enum class IgmpV3GroupRecordType : uint8_t
+{
+    /// mode_is_include - indicates that the interface has a
+    /// filter mode of INCLUDE for the specified multicast
+    /// address. The Source Address [i] fields in this Group
+    /// Record contain the interface’s source list for the
+    /// specified multicast address, if it is non-empty.
+    mode_is_include = 1,
+
+    /// mode_is_exclude - indicates that the interface has a
+    /// filter mode of EXCLUDE for the specified multicast
+    /// address. The Source Address [i] fields in this Group
+    /// Record contain the interface’s source list for the
+    /// specified multicast address, if it is non-empty.
+    mode_is_exclude = 2,
+
+    /// change_to_include_mode - indicates that the interface
+    /// has changed to INCLUDE filter mode for the specified
+    /// multicast address. The Source Address [i] fields
+    /// in this Group Record contain the interface’s new
+    /// source list for the specified multicast address,
+    /// if it is non-empty.
+    change_to_include_mode = 3,
+
+    /// change_to_exclude_mode - indicates that the interface
+    /// has changed to EXCLUDE filter mode for the specified
+    /// multicast address. The Source Address [i] fields
+    /// in this Group Record contain the interface’s new
+    /// source list for the specified multicast address,
+    /// if it is non-empty.
+    change_to_exclude_mode = 4
+};
+
+/// Describes the header of group record in a membership report.
+struct IgmpV3GroupRecordHeader
+{
+    /// The type of the IGMP version 3 group record.
+    IgmpV3GroupRecordType record_type;
+
+    /// The Aux Data Len field contains the length of the Auxiliary Data
+    /// field in this Group Record, in units of 32-bit words. It may contain
+    /// zero, to indicate the absence of any auxiliary data.
+    uint8_t aux_data_length;
+
+    /// The Number of Sources (N) field specifies how many source addresses
+    /// are present in this Group Record.
+    uint16_t number_of_sources;
+
+    /// The Multicast Address field contains the IP multicast address to
+    /// which this Group Record pertains.
+    uint32_t multicast_address;
+} CLICK_SIZE_PACKED_ATTRIBUTE;
+
 /// Sets and returns the IGMP checksum of the IGMP message with the given data and size.
 inline uint16_t update_igmp_checksum(const unsigned char *data, size_t size)
 {
