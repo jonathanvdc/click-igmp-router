@@ -15,6 +15,8 @@
 elementclass Router {
 	$server_address, $client1_address, $client2_address |
 
+	igmp :: IgmpInputHandler();
+
 	// Shared IP input path and routing table
 	ip :: Strip(14)
 		-> CheckIPHeader

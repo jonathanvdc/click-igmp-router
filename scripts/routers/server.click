@@ -7,6 +7,8 @@
 elementclass Server {
 	$address, $gateway |
 
+	igmp :: IgmpInputHandler();
+
 	ip :: Strip(14)
 		-> CheckIPHeader()
 		-> rt :: StaticIPLookup(

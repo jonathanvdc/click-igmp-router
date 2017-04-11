@@ -39,13 +39,13 @@ class IgmpFilter
         record_ptr->source_addresses = source_addresses;
     }
 
-    /// Joins the given multicast address.
+    /// Joins the multicast group with the given multicast address.
     void join(const IPAddress &multicast_address)
     {
         listen(multicast_address, IgmpFilterMode::Exclude, Vector<IPAddress>());
     }
 
-    /// Leaves the given multicast address.
+    /// Leaves the multicast group with the given multicast address.
     void leave(const IPAddress &multicast_address)
     {
         listen(multicast_address, IgmpFilterMode::Include, Vector<IPAddress>());
