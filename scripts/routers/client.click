@@ -8,9 +8,14 @@ require(library igmp-ip-encap.click)
 elementclass Client {
 	$address, $gateway |
 
+	frag :: IPFragmenter(1500)
+		-> arpq :: ARPQuerier($address)
+		-> output;
+
 	igmp :: IgmpInputHandler(IS_ROUTER false)
+		-> IgmpSetChecksum
 		-> IgmpIpEncap($address:ip)
-		-> Discard;
+		-> frag;
 
 	// IGMP tells us the packet is a multicast packet for an address to which
 	// we've subscribed.
@@ -34,9 +39,7 @@ elementclass Client {
 		-> ipgw :: IPGWOptions($address)
 		-> FixIPSrc($address)
 		-> ttl :: DecIPTTL
-		-> frag :: IPFragmenter(1500)
-		-> arpq :: ARPQuerier($address)
-		-> output;
+		-> frag;
 
 	ipgw[1]
 		-> ICMPError($address, parameterproblem)
