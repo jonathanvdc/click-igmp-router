@@ -3,10 +3,13 @@
 // Packets for the network are put on output 0
 // Packets for the host are put on output 1
 
+require(library igmp-ip-encap.click)
+
 elementclass Client {
 	$address, $gateway |
 
 	igmp :: IgmpInputHandler(IS_ROUTER false)
+		-> IgmpIpEncap($address:ip)
 		-> Discard;
 
 	// IGMP tells us the packet is a multicast packet for an address to which
