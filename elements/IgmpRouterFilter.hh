@@ -7,6 +7,7 @@
 #include <clicknet/ip.h>
 #include "IgmpMessage.hh"
 #include "IgmpMemberFilter.hh"
+#include "IgmpRouterVariables.hh"
 
 CLICK_DECLS
 
@@ -47,8 +48,8 @@ class IgmpRouterFilter
     {
     }
 
-    unsigned int get_robustness_variable() const { return robustness_variable; }
-    unsigned int &get_robustness_variable() { return robustness_variable; }
+    const IgmpRouterVariables& get_router_variables() const { return vars; }
+    IgmpRouterVariables& get_router_variables() { return vars; }
 
     /// Tests if the IGMP filter is listening to the given source address for the given multicast
     /// address.
@@ -94,8 +95,8 @@ class IgmpRouterFilter
     }
 
   private:
-    unsigned int robustness_variable = default_robustness_variable;
     Element *owner;
+    IgmpRouterVariables vars;
     HashMap<IPAddress, Timed<IgmpRouterFilterRecord>> records;
 };
 
