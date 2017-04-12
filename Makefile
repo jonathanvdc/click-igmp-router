@@ -6,8 +6,7 @@ all: $(header_files) $(source_files)
 	make -C click-2.0.1
 
 clean:
-	rm -rf $(header_files)
-	rm -rf $(source_files)
+	rm -rf click-2.0.1/elements/local/*
 
 $(source_files): click-2.0.1/elements/local/%.cc: elements/%.cc
 	cp $< $@

@@ -1,5 +1,4 @@
-#ifndef IGMP_INPUT_HANDLER
-#define IGMP_INPUT_HANDLER
+#pragma once
 
 #include <click/config.h>
 #include <click/element.hh>
@@ -7,13 +6,13 @@
 
 CLICK_DECLS
 
-class IgmpInputHandler;
+class IgmpGroupMember;
 
-class IgmpInputHandler : public Element
+class IgmpGroupMember : public Element
 {
 public:
-  IgmpInputHandler();
-  ~IgmpInputHandler();
+  IgmpGroupMember();
+  ~IgmpGroupMember();
 
   // Description of ports:
   //
@@ -30,7 +29,7 @@ public:
   //         2. Incoming IP packets which were filtered out. They are not intended
   //            for the current host.
 
-  const char *class_name() const { return "IgmpInputHandler"; }
+  const char *class_name() const { return "IgmpGroupMember"; }
   const char *port_count() const { return "1/3"; }
   const char *processing() const { return PUSH; }
 
@@ -50,4 +49,3 @@ private:
 };
 
 CLICK_ENDDECLS
-#endif

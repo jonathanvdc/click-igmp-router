@@ -1,4 +1,4 @@
-#include "IgmpInputHandler.hh"
+#include "IgmpGroupMember.hh"
 
 #include <click/config.h>
 #include <click/confparse.hh>
@@ -11,22 +11,22 @@
 #include "IgmpFilter.hh"
 
 CLICK_DECLS
-IgmpInputHandler::IgmpInputHandler()
+IgmpGroupMember::IgmpGroupMember()
 {
 }
 
-IgmpInputHandler::~IgmpInputHandler()
+IgmpGroupMember::~IgmpGroupMember()
 {
 }
 
-int IgmpInputHandler::configure(Vector<String> &conf, ErrorHandler *errh)
+int IgmpGroupMember::configure(Vector<String> &conf, ErrorHandler *errh)
 {
     if (cp_va_kparse(conf, this, errh, "IS_ROUTER", cpkM, cpBool, &filter.is_router(), cpEnd) < 0)
         return -1;
     return 0;
 }
 
-void IgmpInputHandler::push_listen(const IPAddress &multicast_address, const IgmpFilterRecord &record)
+void IgmpGroupMember::push_listen(const IPAddress &multicast_address, const IgmpFilterRecord &record)
 {
     filter.listen(multicast_address, record);
     click_chatter("sending listen request for multicast address %s", multicast_address.unparse().c_str());
@@ -49,9 +49,9 @@ void IgmpInputHandler::push_listen(const IPAddress &multicast_address, const Igm
     output(0).push(packet);
 }
 
-int IgmpInputHandler::join(const String &conf, Element *e, void *, ErrorHandler *errh)
+int IgmpGroupMember::join(const String &conf, Element *e, void *, ErrorHandler *errh)
 {
-    IgmpInputHandler *self = (IgmpInputHandler *)e;
+    IgmpGroupMember *self = (IgmpGroupMember *)e;
     IPAddress to;
     if (cp_va_kparse(conf, self, errh, "TO", cpkM, cpIPAddress, &to, cpEnd) < 0)
         return -1;
@@ -61,9 +61,9 @@ int IgmpInputHandler::join(const String &conf, Element *e, void *, ErrorHandler 
     return 0;
 }
 
-int IgmpInputHandler::leave(const String &conf, Element *e, void *, ErrorHandler *errh)
+int IgmpGroupMember::leave(const String &conf, Element *e, void *, ErrorHandler *errh)
 {
-    IgmpInputHandler *self = (IgmpInputHandler *)e;
+    IgmpGroupMember *self = (IgmpGroupMember *)e;
     IPAddress to;
     if (cp_va_kparse(conf, self, errh, "TO", cpkM, cpIPAddress, &to, cpEnd) < 0)
         return -1;
@@ -73,13 +73,13 @@ int IgmpInputHandler::leave(const String &conf, Element *e, void *, ErrorHandler
     return 0;
 }
 
-void IgmpInputHandler::add_handlers()
+void IgmpGroupMember::add_handlers()
 {
     add_write_handler("join", &join, (void *)0);
     add_write_handler("leave", &leave, (void *)0);
 }
 
-void IgmpInputHandler::push(int port, Packet *packet)
+void IgmpGroupMember::push(int port, Packet *packet)
 {
     auto ip_header = (click_ip *)packet->data();
     if (filter.is_listening_to(ip_header->ip_dst, ip_header->ip_src))
@@ -93,4 +93,4 @@ void IgmpInputHandler::push(int port, Packet *packet)
 }
 
 CLICK_ENDDECLS
-EXPORT_ELEMENT(IgmpInputHandler)
+EXPORT_ELEMENT(IgmpGroupMember)

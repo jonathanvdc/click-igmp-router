@@ -12,7 +12,7 @@ elementclass Client {
 		-> arpq :: ARPQuerier($address)
 		-> output;
 
-	igmp :: IgmpInputHandler(IS_ROUTER false)
+	igmp :: IgmpGroupMember(IS_ROUTER false)
 		-> IgmpSetChecksum
 		-> IgmpIpEncap($address:ip)
 		-> frag;

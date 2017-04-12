@@ -15,7 +15,7 @@
 elementclass Router {
 	$server_address, $client1_address, $client2_address |
 
-	igmp :: IgmpInputHandler(IS_ROUTER true)
+	igmp :: IgmpGroupMember(IS_ROUTER true)
 		-> Discard;
 
 	// IGMP tells us the packet is a multicast packet for an address to which
