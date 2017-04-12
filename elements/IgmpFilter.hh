@@ -52,6 +52,19 @@ inline IgmpFilterRecord create_igmp_leave_record()
 class IgmpFilter
 {
   public:
+    IgmpFilter()
+        : IgmpFilter(false)
+    {
+    }
+
+    IgmpFilter(bool is_router)
+        : is_router_val(is_router)
+    {
+    }
+
+    bool is_router() const { return is_router_val; }
+    bool &is_router() { return is_router_val; }
+
     /// Listens to the given multicast address. A list of source addresses are either explicitly included
     /// or excluded.
     void listen(const IPAddress &multicast_address, IgmpFilterMode filter_mode, const Vector<IPAddress> &source_addresses)
@@ -124,6 +137,15 @@ class IgmpFilter
             // messages are ever sent regarding the all-systems multicast address.
             return true;
         }
+        else if (is_router() && multicast_address == report_multicast_address)
+        {
+            // According to the spec:
+            //
+            // On each interface over which this protocol is being run, the router MUST
+            // enable reception of multicast address 224.0.0.22, from all sources (and MUST
+            // perform the group member part of IGMPv3 for that address on that interface).
+            return true;
+        }
 
         IgmpFilterRecord *record_ptr = records.findp(multicast_address);
         if (record_ptr == nullptr)
@@ -143,6 +165,7 @@ class IgmpFilter
     }
 
   private:
+    bool is_router_val;
     HashMap<IPAddress, IgmpFilterRecord> records;
 };
 

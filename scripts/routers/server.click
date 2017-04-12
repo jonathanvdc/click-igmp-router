@@ -7,16 +7,25 @@
 elementclass Server {
 	$address, $gateway |
 
-	igmp :: IgmpInputHandler()
+	igmp :: IgmpInputHandler(IS_ROUTER true)
 		-> Discard;
 
-	ip :: Strip(14)
-		-> CheckIPHeader()
+	// IGMP tells us the packet is a multicast packet for an address to which
+	// we've subscribed.
+	igmp[1]
+		-> [1]output;
+
+	// IGMP tells us that it's something else.
+	igmp[2]
 		-> rt :: StaticIPLookup(
 					$address:ip/32 0,
 					$address:ipnet 0,
 					0.0.0.0/0.0.0.0 $gateway 1)
 		-> [1]output;
+
+	ip :: Strip(14)
+		-> CheckIPHeader()
+		-> igmp;
 	
 	rt[1]
 		-> DropBroadcasts

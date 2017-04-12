@@ -15,12 +15,16 @@
 elementclass Router {
 	$server_address, $client1_address, $client2_address |
 
-	igmp :: IgmpInputHandler()
+	igmp :: IgmpInputHandler(IS_ROUTER true)
 		-> Discard;
 
-	// Shared IP input path and routing table
-	ip :: Strip(14)
-		-> CheckIPHeader
+	// IGMP tells us the packet is a multicast packet for an address to which
+	// we've subscribed.
+	igmp[1]
+		-> [3]output;
+
+	// IGMP tells us that it's something else.
+	igmp[2]
 		-> rt :: StaticIPLookup(
 					$server_address:ip/32 0,
 					$client1_address:ip/32 0,
@@ -28,6 +32,11 @@ elementclass Router {
 					$server_address:ipnet 1,
 					$client1_address:ipnet 2,
 					$client2_address:ipnet 3);
+
+	// Shared IP input path and routing table
+	ip :: Strip(14)
+		-> CheckIPHeader
+		-> igmp;
 	
 	// ARP responses are copied to each ARPQuerier and the host.
 	arpt :: Tee (3);

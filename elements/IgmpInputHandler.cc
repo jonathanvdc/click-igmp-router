@@ -22,7 +22,7 @@ IgmpInputHandler::~IgmpInputHandler()
 int IgmpInputHandler::configure(Vector<String> &conf, ErrorHandler *errh)
 {
     // Nothing to do here.
-    if (cp_va_kparse(conf, this, errh, cpEnd) < 0)
+    if (cp_va_kparse(conf, this, errh, "IS_ROUTER", cpkM, cpBool, &filter.is_router(), cpEnd) < 0)
         return -1;
     return 0;
 }
@@ -45,7 +45,7 @@ void IgmpInputHandler::push_listen(const IPAddress &multicast_address, const Igm
     auto data_ptr = packet->data();
     report.write(data_ptr);
 
-    // packet->set_dst_ip_anno(to);
+    packet->set_dst_ip_anno(report_multicast_address);
 
     output(0).push(packet);
 }
@@ -78,6 +78,19 @@ void IgmpInputHandler::add_handlers()
 {
     add_write_handler("join", &join, (void *)0);
     add_write_handler("leave", &leave, (void *)0);
+}
+
+void IgmpInputHandler::push(int port, Packet *packet)
+{
+    auto ip_header = (click_ip *)packet->data();
+    if (filter.is_listening_to(ip_header->ip_dst, ip_header->ip_src))
+    {
+        output(1).push(packet);
+    }
+    else
+    {
+        output(2).push(packet);
+    }
 }
 
 CLICK_ENDDECLS
