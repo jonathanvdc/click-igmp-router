@@ -5,6 +5,7 @@
 #include <click/hashmap.hh>
 #include <click/vector.hh>
 #include <clicknet/ip.h>
+#include "IgmpMessage.hh"
 
 CLICK_DECLS
 
@@ -111,7 +112,7 @@ class IgmpFilter
     /// address.
     bool is_listening_to(const IPAddress &multicast_address, const IPAddress &source_address) const
     {
-        if (multicast_address = IPAddress("224.0.0.1"))
+        if (multicast_address == all_systems_multicast_address)
         {
             // According to the spec:
             //

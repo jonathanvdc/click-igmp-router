@@ -7,6 +7,24 @@
 
 CLICK_DECLS
 
+/// In IGMPv3, General Queries are sent with an IP destination address of
+/// 224.0.0.1, the all-systems multicast address.
+///
+/// On all systems -- that is all hosts and routers, including
+/// multicast routers -- reception of packets destined to the all-systems
+/// multicast address, from all sources, is permanently enabled on all
+/// interfaces on which multicast reception is supported. No IGMP
+/// messages are ever sent regarding the all-systems multicast address.
+const IPAddress all_systems_multicast_address("224.0.0.1");
+
+/// Version 3 Reports are sent with an IP destination address of
+/// 224.0.0.22, to which all IGMPv3-capable multicast routers listen.
+///
+/// On each interface over which this protocol is being run, the
+/// router MUST enable reception of multicast address 224.0.0.22, from
+/// all sources.
+const IPAddress report_multicast_address("224.0.0.22");
+
 /// The type of IGMP membership query messages.
 const uint8_t igmp_membership_query_type = 0x11;
 
