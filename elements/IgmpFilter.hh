@@ -8,35 +8,77 @@
 
 CLICK_DECLS
 
+/// An enumeration of possible interpretations of entries in the source addresses
+/// field of an IGMP filter record.
 enum class IgmpFilterMode
 {
+    /// In INCLUDE mode, reception of packets sent to the specified multicast address
+    /// is requested *only* from those IP source addresses listed in the source-list
+    /// parameter.
     Include,
+
+    /// In EXCLUDE mode, reception of packets sent to the given multicast address is
+    /// requested from all IP source addresses *except* those listed in the source-list
+    /// parameter.
     Exclude
+};
+
+/// A record in an IGMP filter.
+struct IgmpFilterRecord
+{
+    /// The filter record's mode.
+    IgmpFilterMode filter_mode;
+
+    /// The filter record's list of source addresses.
+    Vector<IPAddress> source_addresses;
 };
 
 /// A "filter" for IGMP packets. It decides which addresses are listened to and which are not.
 class IgmpFilter
 {
-  private:
-    struct IgmpFilterRecord
-    {
-        bool is_excluding;
-        Vector<IPAddress> source_addresses;
-    };
-
   public:
     /// Listens to the given multicast address. A list of source addresses are either explicitly included
     /// or excluded.
     void listen(const IPAddress &multicast_address, IgmpFilterMode filter_mode, const Vector<IPAddress> &source_addresses)
     {
+        // According to the spec:
+        //
+        // The socket state evolves in response to each invocation of
+        // IPMulticastListen on the socket, as follows:
+        //
+        //     o If the requested filter mode is INCLUDE *and* the requested source
+        //       list is empty, then the entry corresponding to the requested
+        //       interface and multicast address is deleted if present. If no such
+        //       entry is present, the request is ignored.
+        //
+        //     o If the requested filter mode is EXCLUDE *or* the requested source
+        //       list is non-empty, then the entry corresponding to the requested
+        //       interface and multicast address, if present, is changed to contain
+        //       the requested filter mode and source list. If no such entry is
+        //       present, a new entry is created, using the parameters specified in
+        //       the request.
+
+        if (filter_mode == IgmpFilterMode::Include && source_addresses.size() == 0)
+        {
+            records.erase(multicast_address);
+            return;
+        }
+
         IgmpFilterRecord *record_ptr;
         if (!records.findp(multicast_address))
         {
             records.insert(multicast_address, IgmpFilterRecord());
             record_ptr = records.findp(multicast_address);
         }
-        record_ptr->is_excluding = filter_mode == IgmpFilterMode::Exclude;
+        record_ptr->filter_mode = filter_mode;
         record_ptr->source_addresses = source_addresses;
+    }
+
+    /// Listens to the given multicast address. A filter record specifies a list of source addresses that
+    /// are either explicitly included or excluded.
+    void listen(const IPAddress &multicast_address, const IgmpFilterRecord &record)
+    {
+        listen(multicast_address, record.filter_mode, record.source_addresses);
     }
 
     /// Joins the multicast group with the given multicast address.
@@ -61,14 +103,15 @@ class IgmpFilter
             return false;
         }
 
+        bool is_excluding = record_ptr->filter_mode == IgmpFilterMode::Exclude;
         for (const auto &item : record_ptr->source_addresses)
         {
             if (item == source_address)
             {
-                return !record_ptr->is_excluding;
+                return !is_excluding;
             }
         }
-        return record_ptr->is_excluding;
+        return is_excluding;
     }
 
   private:
