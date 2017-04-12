@@ -43,11 +43,28 @@ struct Timed
 /// A record in an IGMP router filter.
 struct IgmpRouterFilterRecord
 {
+    // The spec on this data structure:
+    //
+    // When a router filter-mode for a group is EXCLUDE, the source record
+    // list contains two types of sources. The first type is the set which
+    // represents conflicts in the desired reception state; this set must be
+    // forwarded by some router on the network. The second type is the set
+    // of sources which hosts have requested to not be forwarded. [...]
+    //
+    // When a router filter-mode for a group is INCLUDE, the source record
+    // list is the list of sources desired for the group. This is the total
+    // desired set of sources for that group. Each source in the source
+    // record list must be forwarded by some router on the network.
+
     /// The filter record's mode.
     IgmpFilterMode filter_mode;
 
     /// The filter record's list of source addresses and their timers.
     Vector<Timed<IPAddress>> source_records;
+
+    /// The filter record's list of excluded addresses.
+    /// This list must be empty if the filter mode is INCLUDE.
+    Vector<IPAddress> excluded_records;
 };
 
 /// A router "filter" for IGMP packets. It decides which addresses are listened to and which are not.
