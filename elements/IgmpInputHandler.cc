@@ -21,7 +21,6 @@ IgmpInputHandler::~IgmpInputHandler()
 
 int IgmpInputHandler::configure(Vector<String> &conf, ErrorHandler *errh)
 {
-    // Nothing to do here.
     if (cp_va_kparse(conf, this, errh, "IS_ROUTER", cpkM, cpBool, &filter.is_router(), cpEnd) < 0)
         return -1;
     return 0;
