@@ -123,15 +123,28 @@ class IgmpRouterFilter
             return false;
         }
 
-        bool is_excluding = record_ptr->value.filter_mode == IgmpFilterMode::Exclude;
-        for (const auto &item : record_ptr->value.source_records)
+        if (record_ptr->value.filter_mode == IgmpFilterMode::Exclude)
         {
-            if (item.value == source_address)
+            for (const auto &item : record_ptr->value.excluded_records)
             {
-                return !is_excluding;
+                if (item == source_address)
+                {
+                    return false;
+                }
             }
+            return true;
         }
-        return is_excluding;
+        else
+        {
+            for (const auto &item : record_ptr->value.source_records)
+            {
+                if (item.value == source_address)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
   private:
