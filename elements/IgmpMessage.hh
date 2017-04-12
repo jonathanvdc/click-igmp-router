@@ -2,6 +2,7 @@
 #define IGMP_MESSAGE
 
 #include <click/config.h>
+#include <click/vector.hh>
 #include <clicknet/ip.h>
 
 CLICK_DECLS
@@ -42,6 +43,13 @@ inline unsigned int igmp_code_to_value(uint8_t code)
 /// Describes the header of an IGMP membership query message.
 struct IgmpMembershipQueryHeader
 {
+    IgmpMembershipQueryHeader()
+        : type(), max_resp_code(), checksum(), group_address(), resv(),
+          suppress_router_side_processing(), robustness_variable(),
+          query_interval_code(), number_of_sources()
+    {
+    }
+
     /// The IGMP membership query message's type.
     /// This should always equal igmp_membership_query_type (0x11).
     uint8_t type : 8;
@@ -148,6 +156,11 @@ struct IgmpMembershipQueryHeader
 /// changes in the multicast reception state, of their interfaces.
 struct IgmpV3MembershipReportHeader
 {
+    IgmpV3MembershipReportHeader()
+        : type(), reserved_one(), checksum(), reserved_two(), number_of_group_records()
+    {
+    }
+
     /// The IGMP membership query message's type.
     /// This should always equal igmp_v3_membership_report_type (0x22).
     uint8_t type;
@@ -174,42 +187,47 @@ struct IgmpV3MembershipReportHeader
 /// Defines possible IGMP version 3 group record types.
 enum class IgmpV3GroupRecordType : uint8_t
 {
-    /// mode_is_include - indicates that the interface has a
+    /// MODE_IS_INCLUDE - indicates that the interface has a
     /// filter mode of INCLUDE for the specified multicast
     /// address. The Source Address [i] fields in this Group
     /// Record contain the interface’s source list for the
     /// specified multicast address, if it is non-empty.
-    mode_is_include = 1,
+    ModeIsInclude = 1,
 
-    /// mode_is_exclude - indicates that the interface has a
+    /// MODE_IS_EXCLUDE - indicates that the interface has a
     /// filter mode of EXCLUDE for the specified multicast
     /// address. The Source Address [i] fields in this Group
     /// Record contain the interface’s source list for the
     /// specified multicast address, if it is non-empty.
-    mode_is_exclude = 2,
+    ModeIsExclude = 2,
 
-    /// change_to_include_mode - indicates that the interface
+    /// CHANGE_TO_INCLUDE_MODE - indicates that the interface
     /// has changed to INCLUDE filter mode for the specified
     /// multicast address. The Source Address [i] fields
     /// in this Group Record contain the interface’s new
     /// source list for the specified multicast address,
     /// if it is non-empty.
-    change_to_include_mode = 3,
+    ChangeToIncludeMode = 3,
 
-    /// change_to_exclude_mode - indicates that the interface
+    /// CHANGE_TO_EXCLUDE_MODE - indicates that the interface
     /// has changed to EXCLUDE filter mode for the specified
     /// multicast address. The Source Address [i] fields
     /// in this Group Record contain the interface’s new
     /// source list for the specified multicast address,
     /// if it is non-empty.
-    change_to_exclude_mode = 4
+    ChangeToExcludeMode = 4
 };
 
 /// Describes the header of group record in a membership report.
 struct IgmpV3GroupRecordHeader
 {
+    IgmpV3GroupRecordHeader()
+        : type(), aux_data_length(), number_of_sources(), multicast_address()
+    {
+    }
+
     /// The type of the IGMP version 3 group record.
-    IgmpV3GroupRecordType record_type;
+    IgmpV3GroupRecordType type;
 
     /// The Aux Data Len field contains the length of the Auxiliary Data
     /// field in this Group Record, in units of 32-bit words. It may contain
@@ -223,6 +241,12 @@ struct IgmpV3GroupRecordHeader
     /// The Multicast Address field contains the IP multicast address to
     /// which this Group Record pertains.
     uint32_t multicast_address;
+
+    /// Gets the size of the group record's payload, in bytes.
+    size_t get_payload_size() const
+    {
+        return sizeof(uint32_t) * (ntohs(number_of_sources) + aux_data_length);
+    }
 } CLICK_SIZE_PACKED_ATTRIBUTE;
 
 /// Sets and returns the IGMP checksum of the IGMP message with the given data and size.

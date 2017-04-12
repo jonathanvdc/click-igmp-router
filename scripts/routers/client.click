@@ -6,7 +6,8 @@
 elementclass Client {
 	$address, $gateway |
 
-	igmp :: IgmpInputHandler();
+	igmp :: IgmpInputHandler()
+		-> Discard;
 
 	ip :: Strip(14)
 		-> CheckIPHeader()

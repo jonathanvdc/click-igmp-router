@@ -16,7 +16,7 @@ public:
   ~IgmpInputHandler();
 
   const char *class_name() const { return "IgmpInputHandler"; }
-  const char *port_count() const { return "0/0"; }
+  const char *port_count() const { return "0/1"; }
   const char *processing() const { return PUSH; }
 
   int configure(Vector<String> &, ErrorHandler *);

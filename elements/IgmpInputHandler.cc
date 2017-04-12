@@ -7,6 +7,7 @@
 #include <clicknet/ip.h>
 #include <clicknet/udp.h>
 #include "IgmpMessage.hh"
+#include "IgmpMessageManip.hh"
 #include "IgmpFilter.hh"
 
 CLICK_DECLS
@@ -30,6 +31,23 @@ void IgmpInputHandler::push_listen(const IPAddress &multicast_address, const Igm
 {
     filter.listen(multicast_address, record);
     click_chatter("sending listen request for multicast address %s", multicast_address.unparse().c_str());
+
+    IgmpV3MembershipReport report;
+    report.group_records.push_back(IgmpV3GroupRecord(multicast_address, record, true));
+
+    int tailroom = 0;
+    int packetsize = report.get_size();
+    int headroom = sizeof(click_ether) + sizeof(click_ip);
+    WritablePacket *packet = Packet::make(headroom, 0, packetsize, tailroom);
+    if (packet == 0)
+        return click_chatter("cannot make packet!");
+
+    auto data_ptr = packet->data();
+    report.write(data_ptr);
+
+    // packet->set_dst_ip_anno(to);
+
+    output(0).push(packet);
 }
 
 int IgmpInputHandler::join(const String &conf, Element *e, void *, ErrorHandler *errh)
