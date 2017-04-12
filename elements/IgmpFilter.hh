@@ -111,6 +111,19 @@ class IgmpFilter
     /// address.
     bool is_listening_to(const IPAddress &multicast_address, const IPAddress &source_address) const
     {
+        if (multicast_address = IPAddress("224.0.0.1"))
+        {
+            // According to the spec:
+            //
+            // The all-systems multicast address, 224.0.0.1, is handled as a special
+            // case. On all systems -- that is all hosts and routers, including
+            // multicast routers -- reception of packets destined to the all-systems
+            // multicast address, from all sources, is permanently enabled on all
+            // interfaces on which multicast reception is supported. No IGMP
+            // messages are ever sent regarding the all-systems multicast address.
+            return true;
+        }
+
         IgmpFilterRecord *record_ptr = records.findp(multicast_address);
         if (record_ptr == nullptr)
         {
