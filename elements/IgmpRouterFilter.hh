@@ -4,6 +4,7 @@
 #include <click/element.hh>
 #include <click/hashmap.hh>
 #include <click/vector.hh>
+#include <click/timer.hh>
 #include <clicknet/ip.h>
 #include "IgmpMessage.hh"
 #include "IgmpMemberFilter.hh"
@@ -15,14 +16,24 @@ CLICK_DECLS
 template <typename T>
 struct Timed
 {
-    Timed(const T &value, Element *owner, TimerCallback timer_callback, void *timer_data)
-        : timer(timer_callback, timer_data), value(value)
+    Timed()
+        : value(), timer()
     {
-        timer.initialize(owner);
+    }
+
+    Timed(const T &value, TimerCallback timer_callback, void *timer_data)
+        : value(value), timer(timer_callback, timer_data)
+    {
     }
 
     /// The value that is timed.
     T value;
+
+    /// Initializes this timed value's timer by assigning it to an owner.
+    void initialize(Element *owner)
+    {
+        timer.initialize(owner);
+    }
 
   private:
     /// The timer associated with the value.
@@ -48,8 +59,8 @@ class IgmpRouterFilter
     {
     }
 
-    const IgmpRouterVariables& get_router_variables() const { return vars; }
-    IgmpRouterVariables& get_router_variables() { return vars; }
+    const IgmpRouterVariables &get_router_variables() const { return vars; }
+    IgmpRouterVariables &get_router_variables() { return vars; }
 
     /// Tests if the IGMP filter is listening to the given source address for the given multicast
     /// address.
@@ -83,10 +94,10 @@ class IgmpRouterFilter
             return false;
         }
 
-        bool is_excluding = record_ptr->value->filter_mode == IgmpFilterMode::Exclude;
-        for (const auto &item : record_ptr->value->source_addresses)
+        bool is_excluding = record_ptr->value.filter_mode == IgmpFilterMode::Exclude;
+        for (const auto &item : record_ptr->value.source_records)
         {
-            if (item == source_address)
+            if (item.value == source_address)
             {
                 return !is_excluding;
             }

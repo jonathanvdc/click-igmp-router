@@ -56,7 +56,7 @@ struct IgmpRouterDerivedVariables
 {
     IgmpRouterDerivedVariables(const IgmpRouterCoreVariables &core_variables)
         : startup_query_count(core_variables.robustness_variable),
-          starup_query_interval(core_variables.query_interval / 4),
+          startup_query_interval(core_variables.query_interval / 4),
           last_member_query_count(core_variables.robustness_variable)
     {
     }
@@ -68,7 +68,7 @@ struct IgmpRouterDerivedVariables
 
     /// The Startup Query Interval is the interval between General Queries
     /// sent by a Querier on startup. Default: 1/4 the Query Interval.
-    unsigned int starup_query_interval;
+    unsigned int startup_query_interval;
 
     /// The Last Member Query Count is the number of Group-Specific Queries
     /// sent before the router assumes there are no local members. The Last
@@ -185,7 +185,7 @@ struct IgmpRouterVariables
     // The Last Member Query Time is the time value represented by the Last
     // Member Query Interval, multiplied by the Last Member Query Count. It
     // is not a tunable value, but may be tuned by changing its components.
-    unsigned int get_last_member_query_count()
+    unsigned int get_last_member_query_time()
     {
         return get_last_member_query_interval() * get_last_member_query_count();
     }
