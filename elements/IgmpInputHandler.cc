@@ -35,9 +35,9 @@ void IgmpInputHandler::push_listen(const IPAddress &multicast_address, const Igm
     IgmpV3MembershipReport report;
     report.group_records.push_back(IgmpV3GroupRecord(multicast_address, record, true));
 
-    int tailroom = 0;
-    int packetsize = report.get_size();
-    int headroom = sizeof(click_ether) + sizeof(click_ip);
+    size_t tailroom = 0;
+    size_t packetsize = report.get_size();
+    size_t headroom = sizeof(click_ether) + sizeof(click_ip);
     WritablePacket *packet = Packet::make(headroom, 0, packetsize, tailroom);
     if (packet == 0)
         return click_chatter("cannot make packet!");
