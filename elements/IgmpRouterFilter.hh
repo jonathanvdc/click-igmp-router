@@ -125,14 +125,7 @@ class IgmpRouterFilter
 
         if (record_ptr->value.filter_mode == IgmpFilterMode::Exclude)
         {
-            for (const auto &item : record_ptr->value.excluded_records)
-            {
-                if (item == source_address)
-                {
-                    return false;
-                }
-            }
-            return true;
+            return !in_vector(source_address, record_ptr->value.excluded_records);
         }
         else
         {

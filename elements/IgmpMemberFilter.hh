@@ -47,6 +47,68 @@ inline IgmpFilterRecord create_igmp_leave_record()
     return {IgmpFilterMode::Include, Vector<IPAddress>()};
 }
 
+/// Checks if the specified value is equal to any element of the given vector.
+template <typename T>
+bool in_vector(const T &value, const Vector<T> &vector)
+{
+    for (const auto &item : vector)
+    {
+        if (item == value)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+/// Creates a vector whose elements are the intersection of the given
+/// vectors.
+template <typename T>
+Vector<T> intersect_vectors(const Vector<T> &left, const Vector<T> &right)
+{
+    Vector<T> results;
+    for (const auto &item : left)
+    {
+        if (in_vector<T>(item, right))
+        {
+            results.push_back(item);
+        }
+    }
+    return results;
+}
+
+/// Creates a vector whose elements are the union of the given
+/// vectors.
+template <typename T>
+Vector<T> union_vectors(const Vector<T> &left, const Vector<T> &right)
+{
+    Vector<T> results = left;
+    for (const auto &item : right)
+    {
+        if (!in_vector<T>(item, results))
+        {
+            results.push_back(item);
+        }
+    }
+    return results;
+}
+
+/// Creates a vector whose elements are the difference of the given
+/// vectors.
+template <typename T>
+Vector<T> difference_vectors(const Vector<T> &left, const Vector<T> &right)
+{
+    Vector<T> results;
+    for (const auto &item : left)
+    {
+        if (!in_vector<T>(item, right))
+        {
+            results.push_back(item);
+        }
+    }
+    return results;
+}
+
 /// A "filter" for IGMP packets. It decides which addresses are listened to and which are not.
 class IgmpMemberFilter
 {
@@ -131,14 +193,7 @@ class IgmpMemberFilter
         }
 
         bool is_excluding = record_ptr->filter_mode == IgmpFilterMode::Exclude;
-        for (const auto &item : record_ptr->source_addresses)
-        {
-            if (item == source_address)
-            {
-                return !is_excluding;
-            }
-        }
-        return is_excluding;
+        return is_excluding != in_vector(source_address, record_ptr->source_addresses);
     }
 
   private:
