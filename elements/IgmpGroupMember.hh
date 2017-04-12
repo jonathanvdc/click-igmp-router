@@ -2,7 +2,7 @@
 
 #include <click/config.h>
 #include <click/element.hh>
-#include "IgmpFilter.hh"
+#include "IgmpMemberFilter.hh"
 
 CLICK_DECLS
 
@@ -45,7 +45,7 @@ public:
   void push_listen(const IPAddress &multicast_address, const IgmpFilterRecord &record);
 
 private:
-  IgmpFilter filter;
+  IgmpMemberFilter filter;
 };
 
 CLICK_ENDDECLS

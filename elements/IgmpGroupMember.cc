@@ -8,7 +8,7 @@
 #include <clicknet/udp.h>
 #include "IgmpMessage.hh"
 #include "IgmpMessageManip.hh"
-#include "IgmpFilter.hh"
+#include "IgmpMemberFilter.hh"
 
 CLICK_DECLS
 IgmpGroupMember::IgmpGroupMember()
@@ -21,7 +21,7 @@ IgmpGroupMember::~IgmpGroupMember()
 
 int IgmpGroupMember::configure(Vector<String> &conf, ErrorHandler *errh)
 {
-    if (cp_va_kparse(conf, this, errh, "IS_ROUTER", cpkM, cpBool, &filter.is_router(), cpEnd) < 0)
+    if (cp_va_kparse(conf, this, errh, cpEnd) < 0)
         return -1;
     return 0;
 }

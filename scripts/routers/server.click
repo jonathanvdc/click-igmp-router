@@ -7,7 +7,7 @@
 elementclass Server {
 	$address, $gateway |
 
-	igmp :: IgmpGroupMember(IS_ROUTER true)
+	igmp :: IgmpGroupMember()
 		-> Discard;
 
 	// IGMP tells us the packet is a multicast packet for an address to which

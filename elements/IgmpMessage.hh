@@ -1,5 +1,4 @@
-#ifndef IGMP_MESSAGE
-#define IGMP_MESSAGE
+#pragma once
 
 #include <click/config.h>
 #include <click/vector.hh>
@@ -30,6 +29,97 @@ const uint8_t igmp_membership_query_type = 0x11;
 
 /// The type of IGMP version 3 membership report messages.
 const uint8_t igmp_v3_membership_report_type = 0x22;
+
+/// The Robustness Variable allows tuning for the expected packet loss on
+/// a network. If a network is expected to be lossy, the Robustness
+/// Variable may be increased. IGMP is robust to (Robustness Variable -
+/// 1) packet losses. The Robustness Variable MUST NOT be zero, and
+/// SHOULD NOT be one. Default: 2
+const unsigned int default_robustness_variable = 2;
+
+/// The Query Interval is the interval between General Queries sent by
+/// the Querier. Default: 125 seconds.
+///
+/// By varying the [Query Interval], an administrator may tune the number
+/// of IGMP messages on the network; larger values cause IGMP Queries to
+/// be sent less often.
+const unsigned int default_query_interval = 125;
+
+/// The Max Response Time used to calculate the Max Resp Code inserted
+/// into the periodic General Queries. Default: 100 (10 seconds)
+///
+/// By varying the [Query Response Interval], an administrator may tune
+/// the burstiness of IGMP messages on the network; larger values make
+/// the traffic less bursty, as host responses are spread out over a
+/// larger interval. The number of seconds represented by the [Query
+/// Response Interval] must be less than the [Query Interval].
+const unsigned int default_query_response_interval = 100;
+
+/// The Last Member Query Interval is the Max Response Time used to
+/// calculate the Max Resp Code inserted into Group-Specific Queries sent
+/// in response to Leave Group messages. It is also the Max Response
+/// Time used in calculating the Max Resp Code for Group-and-Source-
+/// Specific Query messages. Default: 10 (1 second)
+///
+/// Note that for values of LMQI greater than 12.8 seconds, a limited set
+/// of values can be represented, corresponding to sequential values of
+/// Max Resp Code. When converting a configured time to a Max Resp Code
+/// value, it is recommended to use the exact value if possible, or the
+/// next lower value if the requested value is not exactly representable.
+///
+/// This value may be tuned to modify the "leave latency" of the network.
+/// A reduced value results in reduced time to detect the loss of the
+/// last member of a group or source.
+const unsigned int default_last_member_query_interval = 10;
+
+/// The Group Membership Interval is the amount of time that must pass
+/// before a multicast router decides there are no more members of a
+/// group or a particular source on a network.
+/// This value MUST be ((the Robustness Variable) times (the Query
+/// Interval)) plus (one Query Response Interval).
+inline unsigned int get_group_membership_interval(
+    unsigned int robustness_variable, unsigned int query_interval,
+    unsigned int query_response_interval)
+{
+    return robustness_variable * query_interval + query_response_interval;
+}
+
+// The Last Member Query Time is the time value represented by the Last
+// Member Query Interval, multiplied by the Last Member Query Count. It
+// is not a tunable value, but may be tuned by changing its components.
+inline unsigned int get_last_member_query_count(
+    unsigned int last_member_query_interval, unsigned int last_member_query_count)
+{
+    return last_member_query_interval * last_member_query_count;
+}
+
+/// The Startup Query Interval is the interval between General Queries
+/// sent by a Querier on startup. Default: 1/4 the Query Interval.
+inline unsigned int get_default_startup_query_interval(
+    unsigned int query_interval)
+{
+    return query_interval / 4;
+}
+
+/// The Startup Query Count is the number of Queries sent out on startup,
+/// separated by the Startup Query Interval. Default: the Robustness
+/// Variable.
+inline unsigned int get_default_startup_query_count(
+    unsigned int robustness_variable)
+{
+    return robustness_variable;
+}
+
+/// The Last Member Query Count is the number of Group-Specific Queries
+/// sent before the router assumes there are no local members. The Last
+/// Member Query Count is also the number of Group-and-Source-Specific
+/// Queries sent before the router assumes there are no listeners for a
+/// particular source. Default: the Robustness Variable.
+inline unsigned int get_default_last_member_query_count(
+    unsigned int robustness_variable)
+{
+    return robustness_variable;
+}
 
 /// Converts an IGMP code to an integer value as follows:
 ///
@@ -276,6 +366,13 @@ inline uint16_t update_igmp_checksum(const unsigned char *data, size_t size)
     return header->checksum;
 }
 
+/// Gets the IGMP checksum stored in the given IGMP message.
+inline uint16_t get_igmp_checksum(const unsigned char *data)
+{
+    auto header = (IgmpMembershipQueryHeader *)data;
+    return header->checksum;
+}
+
 /// Computes and returns an IGMP checksum for the IGMP message with the given data and size.
 inline uint16_t compute_igmp_checksum(const unsigned char *data, size_t size)
 {
@@ -287,5 +384,3 @@ inline uint16_t compute_igmp_checksum(const unsigned char *data, size_t size)
 }
 
 CLICK_ENDDECLS
-
-#endif

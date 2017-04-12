@@ -1,7 +1,7 @@
 #pragma once
 
 #include <click/config.h>
-#include "IgmpFilter.hh"
+#include "IgmpMemberFilter.hh"
 #include "IgmpMessage.hh"
 
 CLICK_DECLS

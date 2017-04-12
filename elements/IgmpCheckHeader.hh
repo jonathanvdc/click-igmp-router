@@ -5,13 +5,13 @@
 
 CLICK_DECLS
 
-class IgmpSetChecksum;
+class IgmpCheckHeader;
 
-class IgmpSetChecksum : public Element
+class IgmpCheckHeader : public Element
 {
   public:
-    IgmpSetChecksum();
-    ~IgmpSetChecksum();
+    IgmpCheckHeader();
+    ~IgmpCheckHeader();
 
     // Description of ports:
     //
@@ -19,10 +19,11 @@ class IgmpSetChecksum : public Element
     //         0. IGMP packets.
     //
     //     Output:
-    //         0. IGMP packets with correct checksums.
+    //         0. IGMP packets with valid checksums.
+    //         1. IGMP packets with invalid checksums.
 
-    const char *class_name() const { return "IgmpSetChecksum"; }
-    const char *port_count() const { return "1/1"; }
+    const char *class_name() const { return "IgmpCheckHeader"; }
+    const char *port_count() const { return "1/2"; }
     const char *processing() const { return PUSH; }
 
     int configure(Vector<String> &, ErrorHandler *);
