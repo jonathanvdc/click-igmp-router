@@ -62,6 +62,18 @@ class IgmpRouterFilter
     const IgmpRouterVariables &get_router_variables() const { return vars; }
     IgmpRouterVariables &get_router_variables() { return vars; }
 
+    /// Gets a pointer to the record for the given multicast address.
+    Timed<IgmpRouterFilterRecord> *get_record(const IPAddress &multicast_address)
+    {
+        return records.findp(multicast_address);
+    }
+
+    /// Gets a pointer to the record for the given multicast address.
+    const Timed<IgmpRouterFilterRecord> *get_record(const IPAddress &multicast_address) const
+    {
+        return records.findp(multicast_address);
+    }
+
     /// Tests if the IGMP filter is listening to the given source address for the given multicast
     /// address.
     bool is_listening_to(const IPAddress &multicast_address, const IPAddress &source_address) const
@@ -88,7 +100,7 @@ class IgmpRouterFilter
             return true;
         }
 
-        Timed<IgmpRouterFilterRecord> *record_ptr = records.findp(multicast_address);
+        const Timed<IgmpRouterFilterRecord> *record_ptr = get_record(multicast_address);
         if (record_ptr == nullptr)
         {
             return false;
