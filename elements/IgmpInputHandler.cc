@@ -26,14 +26,10 @@ int IgmpInputHandler::configure(Vector<String> &conf, ErrorHandler *errh)
     return 0;
 }
 
-void IgmpInputHandler::push_join(const IPAddress &multicast_address)
+void IgmpInputHandler::push_listen(const IPAddress &multicast_address, const IgmpFilterRecord &record)
 {
-    click_chatter("sending join request for multicast address %s", multicast_address.unparse().c_str());
-}
-
-void IgmpInputHandler::push_leave(const IPAddress &multicast_address)
-{
-    click_chatter("sending leave request for multicast address %s", multicast_address.unparse().c_str());
+    filter.listen(multicast_address, record);
+    click_chatter("sending listen request for multicast address %s", multicast_address.unparse().c_str());
 }
 
 int IgmpInputHandler::join(const String &conf, Element *e, void *, ErrorHandler *errh)
@@ -43,8 +39,8 @@ int IgmpInputHandler::join(const String &conf, Element *e, void *, ErrorHandler 
     if (cp_va_kparse(conf, self, errh, "TO", cpkM, cpIPAddress, &to, cpEnd) < 0)
         return -1;
 
-    self->filter.join(to);
-    self->push_join(to);
+    click_chatter("IGMP join %s", to.unparse().c_str());
+    self->push_listen(to, create_igmp_join_record());
     return 0;
 }
 
@@ -55,8 +51,8 @@ int IgmpInputHandler::leave(const String &conf, Element *e, void *, ErrorHandler
     if (cp_va_kparse(conf, self, errh, "TO", cpkM, cpIPAddress, &to, cpEnd) < 0)
         return -1;
 
-    self->filter.leave(to);
-    self->push_leave(to);
+    click_chatter("IGMP leave %s", to.unparse().c_str());
+    self->push_listen(to, create_igmp_leave_record());
     return 0;
 }
 

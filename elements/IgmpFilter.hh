@@ -33,6 +33,20 @@ struct IgmpFilterRecord
     Vector<IPAddress> source_addresses;
 };
 
+/// Creates an IGMP filter record that performs a simple 'join:' it listens to all
+/// messages from a multicast group, without filtering on specific source addresses.
+inline IgmpFilterRecord create_igmp_join_record()
+{
+    return {IgmpFilterMode::Exclude, Vector<IPAddress>()};
+}
+
+/// Creates an IGMP filter record that performs a simple 'leave:' it stops listening to
+/// messages from a multicast group, regardless of source addresses.
+inline IgmpFilterRecord create_igmp_leave_record()
+{
+    return {IgmpFilterMode::Include, Vector<IPAddress>()};
+}
+
 /// A "filter" for IGMP packets. It decides which addresses are listened to and which are not.
 class IgmpFilter
 {
