@@ -86,12 +86,12 @@ struct IgmpV3GroupRecord
 
     /// Reads an IGMP version 3 group record from the given buffer and advances
     /// the buffer pointer by the group record's size. Auxiliary data is ignored.
-    static IgmpV3GroupRecord read(unsigned char *&buffer)
+    static IgmpV3GroupRecord read(const unsigned char *(&buffer))
     {
         IgmpV3GroupRecord result;
 
         // Parse the header.
-        auto header_ptr = (IgmpV3GroupRecordHeader *)buffer;
+        auto header_ptr = (const IgmpV3GroupRecordHeader *)buffer;
         result.type = header_ptr->type;
         result.multicast_address = IPAddress(header_ptr->multicast_address);
         uint16_t number_of_sources = ntohs(header_ptr->number_of_sources);
@@ -101,7 +101,7 @@ struct IgmpV3GroupRecord
         // Parse the source addresses.
         for (uint16_t i = 0; i < number_of_sources; i++)
         {
-            uint32_t addr = *((uint32_t *)buffer);
+            uint32_t addr = *((const uint32_t *)buffer);
             buffer += sizeof(uint32_t);
             result.source_addresses.push_back(IPAddress(addr));
         }
@@ -154,12 +154,12 @@ struct IgmpV3MembershipReport
 
     /// Reads an IGMP version 3 group record from the given buffer and advances
     /// the buffer pointer by the group record's size. Auxiliary data is ignored.
-    static IgmpV3MembershipReport read(unsigned char *&buffer)
+    static IgmpV3MembershipReport read(const unsigned char *(&buffer))
     {
         IgmpV3MembershipReport result;
 
         // Parse the header.
-        auto header_ptr = (IgmpV3MembershipReportHeader *)buffer;
+        auto header_ptr = (const IgmpV3MembershipReportHeader *)buffer;
         uint16_t number_of_group_records = ntohs(header_ptr->number_of_group_records);
         buffer += sizeof(IgmpV3MembershipReportHeader);
 
