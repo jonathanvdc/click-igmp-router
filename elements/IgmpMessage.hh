@@ -269,7 +269,7 @@ struct IgmpV3GroupRecordHeader
 /// Gets the type of the given IGMP packet.
 inline uint8_t get_igmp_message_type(const unsigned char *data)
 {
-    auto header = (IgmpV3MembershipReportHeader *)data;
+    auto header = reinterpret_cast<const IgmpV3MembershipReportHeader *>(data);
     return header->type;
 }
 
@@ -286,9 +286,9 @@ inline bool is_igmp_v3_membership_report(const unsigned char *data)
 }
 
 /// Sets and returns the IGMP checksum of the IGMP message with the given data and size.
-inline uint16_t update_igmp_checksum(const unsigned char *data, size_t size)
+inline uint16_t update_igmp_checksum(unsigned char *data, size_t size)
 {
-    auto header = (IgmpMembershipQueryHeader *)data;
+    auto header = reinterpret_cast<IgmpMembershipQueryHeader *>(data);
     header->checksum = 0;
     header->checksum = click_in_cksum(data, (int)size);
     return header->checksum;
@@ -297,7 +297,7 @@ inline uint16_t update_igmp_checksum(const unsigned char *data, size_t size)
 /// Gets the IGMP checksum stored in the given IGMP message.
 inline uint16_t get_igmp_checksum(const unsigned char *data)
 {
-    auto header = (IgmpMembershipQueryHeader *)data;
+    auto header = reinterpret_cast<const IgmpMembershipQueryHeader *>(data);
     return header->checksum;
 }
 

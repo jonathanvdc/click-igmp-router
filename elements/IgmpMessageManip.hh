@@ -91,7 +91,7 @@ struct IgmpV3GroupRecord
         IgmpV3GroupRecord result;
 
         // Parse the header.
-        auto header_ptr = (const IgmpV3GroupRecordHeader *)buffer;
+        auto header_ptr = reinterpret_cast<const IgmpV3GroupRecordHeader *>(buffer);
         result.type = header_ptr->type;
         result.multicast_address = IPAddress(header_ptr->multicast_address);
         uint16_t number_of_sources = ntohs(header_ptr->number_of_sources);
@@ -101,7 +101,7 @@ struct IgmpV3GroupRecord
         // Parse the source addresses.
         for (uint16_t i = 0; i < number_of_sources; i++)
         {
-            uint32_t addr = *((const uint32_t *)buffer);
+            uint32_t addr = *(reinterpret_cast<const uint32_t *>(buffer));
             buffer += sizeof(uint32_t);
             result.source_addresses.push_back(IPAddress(addr));
         }
@@ -159,7 +159,7 @@ struct IgmpV3MembershipReport
         IgmpV3MembershipReport result;
 
         // Parse the header.
-        auto header_ptr = (const IgmpV3MembershipReportHeader *)buffer;
+        auto header_ptr = reinterpret_cast<const IgmpV3MembershipReportHeader *>(buffer);
         uint16_t number_of_group_records = ntohs(header_ptr->number_of_group_records);
         buffer += sizeof(IgmpV3MembershipReportHeader);
 
