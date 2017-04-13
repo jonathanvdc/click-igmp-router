@@ -26,12 +26,27 @@ class CallbackTimer final
         timer->initialize(owner);
     }
 
-    /// Schedules the timer to fire after the given amount of time.
+    /// Schedules the timer to fire after the given amount of seconds.
     void schedule_after_sec(uint32_t delta_sec)
     {
         if (timer->initialized())
         {
             timer->schedule_after_sec(delta_sec);
+        }
+    }
+
+    /// Schedules the timer to fire after the given amount of centiseconds.
+    void schedule_after_csec(uint32_t delta_csec)
+    {
+        schedule_after_msec(delta_csec * 100);
+    }
+
+    /// Schedules the timer to fire after the given amount of milliseconds.
+    void schedule_after_msec(uint32_t delta_msec)
+    {
+        if (timer->initialized())
+        {
+            timer->schedule_after_msec(delta_msec);
         }
     }
 
