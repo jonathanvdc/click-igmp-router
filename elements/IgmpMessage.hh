@@ -266,6 +266,25 @@ struct IgmpV3GroupRecordHeader
     }
 } CLICK_SIZE_PACKED_ATTRIBUTE;
 
+/// Gets the type of the given IGMP packet.
+inline uint8_t get_igmp_message_type(const unsigned char *data)
+{
+    auto header = (IgmpV3MembershipReportHeader *)data;
+    return header->type;
+}
+
+/// Tests if the given IGMP packet is an IGMP membership query.
+inline bool is_igmp_membership_query(const unsigned char *data)
+{
+    return get_igmp_message_type(data) == igmp_membership_query_type;
+}
+
+/// Tests if the given IGMP packet is an IGMPv3 membership report.
+inline bool is_igmp_v3_membership_report(const unsigned char *data)
+{
+    return get_igmp_message_type(data) == igmp_v3_membership_report_type;
+}
+
 /// Sets and returns the IGMP checksum of the IGMP message with the given data and size.
 inline uint16_t update_igmp_checksum(const unsigned char *data, size_t size)
 {
