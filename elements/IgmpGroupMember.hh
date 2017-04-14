@@ -2,6 +2,8 @@
 
 #include <click/config.h>
 #include <click/element.hh>
+#include "EventSchedule.hh"
+#include "IgmpMessageManip.hh"
 #include "IgmpMemberFilter.hh"
 
 CLICK_DECLS
@@ -44,10 +46,18 @@ public:
 
   void push(int port, Packet *packet);
 
-  void push_listen(const IPAddress &multicast_address, const IgmpFilterRecord &record);
-
 private:
+  struct IgmpMembershipQueryResponse
+  {
+    IgmpMembershipQuery query;
+
+    void operator()() const;
+  };
+
+  void push_listen(const IPAddress &multicast_address, const IgmpFilterRecord &record);
+  void accept_query(const IgmpMembershipQuery &query);
   IgmpMemberFilter filter;
+  EventSchedule<IgmpMembershipQueryResponse> delayed_responses;
 };
 
 CLICK_ENDDECLS

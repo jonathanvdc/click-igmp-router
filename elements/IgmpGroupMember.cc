@@ -3,6 +3,7 @@
 #include <click/config.h>
 #include <click/confparse.hh>
 #include <click/error.hh>
+#include <click/glue.hh>
 #include <clicknet/ether.h>
 #include <clicknet/ip.h>
 #include <clicknet/udp.h>
@@ -12,6 +13,7 @@
 
 CLICK_DECLS
 IgmpGroupMember::IgmpGroupMember()
+    : delayed_responses(this)
 {
 }
 
@@ -29,7 +31,7 @@ int IgmpGroupMember::configure(Vector<String> &conf, ErrorHandler *errh)
 void IgmpGroupMember::push_listen(const IPAddress &multicast_address, const IgmpFilterRecord &record)
 {
     filter.listen(multicast_address, record);
-    click_chatter("sending listen request for multicast address %s", multicast_address.unparse().c_str());
+    click_chatter("IGMP group member: changing mode for %s", multicast_address.unparse().c_str());
 
     IgmpV3MembershipReport report;
     report.group_records.push_back(IgmpV3GroupRecord(multicast_address, record, true));
@@ -56,7 +58,7 @@ int IgmpGroupMember::join(const String &conf, Element *e, void *, ErrorHandler *
     if (cp_va_kparse(conf, self, errh, "TO", cpkM, cpIPAddress, &to, cpEnd) < 0)
         return -1;
 
-    click_chatter("IGMP join %s", to.unparse().c_str());
+    click_chatter("IGMP group member: join %s", to.unparse().c_str());
     self->push_listen(to, create_igmp_join_record());
     return 0;
 }
@@ -68,7 +70,7 @@ int IgmpGroupMember::leave(const String &conf, Element *e, void *, ErrorHandler 
     if (cp_va_kparse(conf, self, errh, "TO", cpkM, cpIPAddress, &to, cpEnd) < 0)
         return -1;
 
-    click_chatter("IGMP leave %s", to.unparse().c_str());
+    click_chatter("IGMP group member: leave %s", to.unparse().c_str());
     self->push_listen(to, create_igmp_leave_record());
     return 0;
 }
@@ -96,7 +98,29 @@ void IgmpGroupMember::push(int port, Packet *packet)
     else
     {
         assert(port == 1);
+        if (is_igmp_membership_query(packet->data()))
+        {
+            auto data_ptr = packet->data();
+            accept_query(IgmpMembershipQuery::read(data_ptr));
+        }
     }
+}
+
+void IgmpGroupMember::accept_query(const IgmpMembershipQuery &query)
+{
+    // The spec dictates the following:
+    //
+    //     When a system receives a Query, it does not respond immediately.
+    //     Instead, it delays its response by a random amount of time, bounded
+    //     by the Max Resp Time value derived from the Max Resp Code in the
+    //     received Query message.
+    IgmpMembershipQueryResponse response;
+    response.query = query;
+    delayed_responses.schedule_after_csec(click_random(1, query.max_resp_time), response);
+}
+
+void IgmpGroupMember::IgmpMembershipQueryResponse::operator()() const
+{
 }
 
 CLICK_ENDDECLS
