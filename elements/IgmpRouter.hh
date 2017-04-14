@@ -28,8 +28,9 @@ public:
   //         1. Incoming IP packets which have been filtered based on their
   //            source address.
   //
-  //         2. Incoming IP packets which were filtered out. They are not intended
-  //            for the current host.
+  //         2. Incoming IP packets which were filtered out. The router does
+  //            not believe that these are multicast packets intended for a
+  //            client on the network.
 
   const char *class_name() const { return "IgmpRouter"; }
   const char *port_count() const { return "2/3"; }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <click/config.h>
-#include "Box.hh"
 #include "Rc.hh"
 
 CLICK_DECLS

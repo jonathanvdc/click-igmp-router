@@ -15,13 +15,18 @@
 elementclass Router {
 	$server_address, $client1_address, $client2_address |
 
-	igmp :: IgmpGroupMember()
-		-> Discard;
+	// ARP responses are copied to each ARPQuerier and the host.
+	arpt :: Tee (3);
 
-	// IGMP tells us the packet is a multicast packet for an address to which
-	// we've subscribed.
+	igmp :: IgmpRouter()
+		-> IgmpSetChecksum
+		-> IgmpIpEncap($server_address:ip) // TODO: is $server_address:ip the right address for this IP-encap?
+		-> IPFragmenter(1500)
+		-> arpt;
+
+	// IGMP tells us the packet is a multicast packet for a the network.
 	igmp[1]
-		-> [3]output;
+		-> arpt;
 
 	// IGMP tells us that it's something else.
 	igmp[2]
@@ -36,10 +41,11 @@ elementclass Router {
 	// Shared IP input path and routing table
 	ip :: Strip(14)
 		-> CheckIPHeader
-		-> igmp;
-	
-	// ARP responses are copied to each ARPQuerier and the host.
-	arpt :: Tee (3);
+		-> ip_classifier :: IPClassifier(ip proto igmp, -)
+		-> [1]igmp;
+
+	ip_classifier[1]
+		-> [0]igmp;
 	
 	// Input and output paths for interface 0
 	input
