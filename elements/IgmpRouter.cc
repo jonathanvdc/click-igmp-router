@@ -34,6 +34,11 @@ void IgmpRouter::push(int port, Packet *packet)
         auto ip_header = (click_ip *)packet->data();
         if (filter.is_listening_to(ip_header->ip_dst, ip_header->ip_src))
         {
+            auto src_string = IPAddress(ip_header->ip_src).unparse();
+            auto dst_string = IPAddress(ip_header->ip_dst).unparse();
+            click_chatter(
+                "IGMP router: forwarding packet from %s to %s",
+                src_string.c_str(), dst_string.c_str());
             output(1).push(packet);
         }
         else

@@ -24,7 +24,7 @@ elementclass Router {
 		-> IPFragmenter(1500)
 		-> arpt;
 
-	// IGMP tells us the packet is a multicast packet for a the network.
+	// IGMP tells us the packet is a multicast packet for the network.
 	igmp[1]
 		-> arpt;
 
