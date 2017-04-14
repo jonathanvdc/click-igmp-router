@@ -124,6 +124,49 @@ void IgmpRouter::handle_igmp_packet(Packet *packet)
 
 void IgmpRouter::query_multicast_group(const IPAddress &multicast_address)
 {
+    click_chatter("IGMP router: querying multicast group %s", multicast_address.unparse().c_str());
+
+    IgmpMembershipQuery query;
+    // According to the spec:
+    //
+    //     The Last Member Query Interval is the Max Response Time used to
+    //     calculate the Max Resp Code inserted into Group-Specific Queries sent
+    //     in response to Leave Group messages.
+    query.max_resp_time = filter.get_router_variables().get_last_member_query_interval();
+
+    // Set the query's group address.
+    query.group_address = multicast_address;
+
+    // Spec says:
+    //
+    //     When transmitting a group specific query, if the group timer is
+    //     larger than LMQT, the "Suppress Router-Side Processing" bit is set in
+    //     the query message.
+    auto record_ptr = filter.get_record(multicast_address);
+    auto lmqt = filter.get_router_variables().get_last_member_query_time();
+    if (record_ptr->timer.scheduled() && record_ptr->timer.remaining_time_csec() > lmqt)
+    {
+        query.suppress_router_side_processing = true;
+    }
+
+    query.robustness_variable = filter.get_router_variables().get_robustness_variable();
+    click_chatter("robustness variable: %d", query.robustness_variable);
+
+    query.query_interval = filter.get_router_variables().get_query_interval();
+
+    size_t tailroom = 0;
+    size_t packetsize = query.get_size();
+    size_t headroom = sizeof(click_ether) + sizeof(click_ip);
+    WritablePacket *packet = Packet::make(headroom, 0, packetsize, tailroom);
+    if (packet == 0)
+        return click_chatter("cannot make packet!");
+
+    auto data_ptr = packet->data();
+    query.write(data_ptr);
+
+    packet->set_dst_ip_anno(all_systems_multicast_address);
+
+    output(0).push(packet);
 }
 
 CLICK_ENDDECLS
