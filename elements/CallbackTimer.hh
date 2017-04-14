@@ -25,6 +25,18 @@ class CallbackTimer final
         timer->initialize(owner);
     }
 
+    /// Tests if this timer has been initialized yet.
+    bool initialized() const
+    {
+        return timer->initialized();
+    }
+
+    /// Tests if this timer is scheduled to expire at some point.
+    bool scheduled() const
+    {
+        return timer->scheduled();
+    }
+
     /// Schedules the timer to fire after the given amount of seconds.
     void schedule_after_sec(uint32_t delta_sec)
     {
@@ -47,6 +59,18 @@ class CallbackTimer final
         {
             timer->schedule_after_msec(delta_msec);
         }
+    }
+
+    /// Gets the amount of time remaining until this timer fires, in milliseconds.
+    uint32_t remaining_time_msec() const
+    {
+        return (timer->expiry_steady() - Timestamp::recent_steady()).msec();
+    }
+
+    /// Gets the amount of time remaining until this timer fires, in centiseconds.
+    uint32_t remaining_time_csec() const
+    {
+        return remaining_time_msec() / 100;
     }
 
   private:
