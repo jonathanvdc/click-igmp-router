@@ -42,6 +42,7 @@ elementclass Router {
 	ip :: Strip(14)
 		-> CheckIPHeader
 		-> ip_classifier :: IPClassifier(ip proto igmp, -)
+		-> StripIPHeader
 		-> [1]igmp;
 
 	ip_classifier[1]
