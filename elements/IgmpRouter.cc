@@ -50,6 +50,10 @@ void IgmpRouter::push(int port, Packet *packet)
 
 void IgmpRouter::handle_igmp_packet(Packet *packet)
 {
+    click_chatter(
+        "Received IGMP packet with type %d at router",
+        (int)get_igmp_message_type(packet->data()));
+
     if (!is_igmp_v3_membership_report(packet->data()))
     {
         // Silently ignore non-membership report--messages.
@@ -61,6 +65,8 @@ void IgmpRouter::handle_igmp_packet(Packet *packet)
     auto report = IgmpV3MembershipReport::read(data_ptr);
     for (const auto &group : report.group_records)
     {
+        auto group_string = group.to_string();
+        click_chatter("Received at router: %s", group_string.c_str());
         IgmpFilterRecord record;
         switch (group.type)
         {

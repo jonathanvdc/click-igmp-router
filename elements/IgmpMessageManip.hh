@@ -111,6 +111,31 @@ struct IgmpV3GroupRecord
 
         return result;
     }
+
+    String get_type_string() const
+    {
+        switch (type)
+        {
+        case IgmpV3GroupRecordType::ModeIsInclude:
+            return "mode-is-include";
+        case IgmpV3GroupRecordType::ModeIsExclude:
+            return "mode-is-exclude";
+        case IgmpV3GroupRecordType::ChangeToIncludeMode:
+            return "change-to-include";
+        case IgmpV3GroupRecordType::ChangeToExcludeMode:
+            return "change-to-exclude";
+        default:
+            return "unknown (" + String((int)type) + ")";
+        }
+    }
+
+    String to_string() const
+    {
+        return "IGMPv3 group record: type: " +
+               get_type_string() + ", multicast address: " +
+               multicast_address.unparse() + ", " +
+               String(source_addresses.size()) + " source addresses.";
+    }
 };
 
 /// Represents a parsed IGMP version 3 membership report.
