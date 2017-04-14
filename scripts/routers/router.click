@@ -22,12 +22,12 @@ elementclass Router {
 	//     Multicast routers implementing IGMPv3 keep state per group per
 	//     attached network.
 	//
-	// IgmpRouter/IgmpIpRouter do that _for just one network._
+	// IgmpRouter/IgmpIpRouter do that for just one network. So we'll create three.
 
-	// TODO: is $server_address:ip the right address for the router?
+	// TODO: are these addresses correct? Do they matter?
 	igmp_server :: IgmpIpRouter($server_address:ip);
-	igmp_client1 :: IgmpIpRouter($server_address:ip);
-	igmp_client2 :: IgmpIpRouter($server_address:ip);
+	igmp_client1 :: IgmpIpRouter($client1_address:ip);
+	igmp_client2 :: IgmpIpRouter($client2_address:ip);
 
 	igmp_in_switch :: PaintSwitch;
 	igmp_in_switch[0] -> Discard;
@@ -48,6 +48,10 @@ elementclass Router {
 			$server_address:ipnet 1,
 			$client1_address:ipnet 2,
 			$client2_address:ipnet 3);
+
+	igmp_server[1] -> rt;
+	igmp_client1[1] -> rt;
+	igmp_client2[1] -> rt;
 
 	// ARP responses are copied to each ARPQuerier and the host.
 	arpt :: Tee (3);

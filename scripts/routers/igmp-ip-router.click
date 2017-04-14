@@ -13,6 +13,7 @@ elementclass IgmpIpRouter {
 	//
 	//     * Output:
 	//         0. IP packets for the network managed by this router instance.
+	//         1. Erroneous IP packets.
 	//
 
 	igmp :: IgmpRouter()
@@ -23,8 +24,25 @@ elementclass IgmpIpRouter {
 
 	// IGMP tells us an IP packet is a multicast packet for the network.
 	igmp[1]
+		-> DropBroadcasts
 		-> IPPrint("IGMP router: forwarding")
+		-> ipgw :: IPGWOptions($src_ip)
+		-> FixIPSrc($src_ip)
+		-> ttl :: DecIPTTL
+		-> frag :: IPFragmenter(1500)
 		-> [0]output;
+
+	ipgw[1]
+		-> ICMPError($src_ip, parameterproblem)
+		-> [1]output;
+
+	ttl[1]
+		-> ICMPError($src_ip, timeexceeded)
+		-> [1]output;
+
+	frag[1]
+		-> ICMPError($src_ip, unreachable, needfrag)
+		-> [1]output;
 
 	// IGMP tells us that it's something else. Better drop it then.
 	igmp[2]
