@@ -125,7 +125,7 @@ struct IgmpV3GroupRecord
         case IgmpV3GroupRecordType::ChangeToExcludeMode:
             return "change-to-exclude";
         default:
-            return "unknown (" + String((int)type) + ")";
+            return "unknown (0x" + String::make_numeric((String::uint_large_t)type, 16) + ")";
         }
     }
 
