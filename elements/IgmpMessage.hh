@@ -32,7 +32,7 @@ const uint8_t igmp_v3_membership_report_type = 0x22;
 
 /// Converts an IGMP code to an integer value as follows:
 ///
-///     * If Code < 128, return Max Resp Code
+///     * If Code < 128, return Code
 ///
 ///     * If Code >= 128, Code represents a floating-point
 ///       value as follows:
@@ -57,19 +57,59 @@ inline unsigned int igmp_code_to_value(uint8_t code)
     }
 }
 
+/// Converts a value to an IGMP code. This function does the exact
+/// opposite of `igmp_code_to_value'.
+inline uint8_t igmp_value_to_code(unsigned int value)
+{
+    if (value < 128)
+    {
+        // Values in the [0, 128) range are easy.
+        return (uint8_t)value;
+    }
+    else
+    {
+        // Values in the [128, 255] range are harder.
+        // I'm betting they're also pretty rare, and that lower (~128)
+        // values are more common than higher (~255) values.
+        //
+        // So we can use following trivial algorithm: we iterate over
+        // all possible codes, compute the value for each code and pick
+        // either the code with a value that is equal to the value
+        // we want to generate a code for, or the code with the next
+        // lower value.
+        //
+        // The next lower value rule is derived from this paragraph from
+        // the spec:
+        //
+        //     When converting a configured time to a Max Resp Code
+        //     value, it is recommended to use the exact value if possible, or the
+        //     next lower value if the requested value is not exactly representable.
+
+        for (uint8_t code = 128; code < 255; code++)
+        {
+            auto code_val = igmp_code_to_value(code);
+            if (code_val == value)
+                return code;
+            else if (code_val > value)
+                return code - 1;
+        }
+        // Return the highest code.
+        return 255;
+    }
+}
+
 /// Describes the header of an IGMP membership query message.
 struct IgmpMembershipQueryHeader
 {
     IgmpMembershipQueryHeader()
-        : type(), max_resp_code(), checksum(), group_address(), resv(),
-          suppress_router_side_processing(), robustness_variable(),
+        : type(), max_resp_code(), checksum(), group_address(), flags(),
           query_interval_code(), number_of_sources()
     {
     }
 
     /// The IGMP membership query message's type.
     /// This should always equal igmp_membership_query_type (0x11).
-    uint8_t type : 8;
+    uint8_t type;
 
     /// Specifies the maximum amount of time allowed before sending a responding report.
     /// The actual time allowed, called the Max Resp Time, is represented in units of 1/10
@@ -86,42 +126,21 @@ struct IgmpMembershipQueryHeader
     ///       +-+-+-+-+-+-+-+-+
     ///
     ///       Max Resp Time = (mant | 0x10) << (exp + 3)
-    uint8_t max_resp_code : 8;
+    uint8_t max_resp_code;
 
     /// The Checksum is the 16-bit one’s complement of the one’s complement
     /// sum of the whole IGMP message (the entire IP payload). For computing
     /// the checksum, the Checksum field is set to zero. When receiving
     /// packets, the checksum MUST be verified before processing a packet.
-    uint16_t checksum : 16;
+    uint16_t checksum;
 
     /// The Group Address field is set to zero when sending a General Query,
     /// and set to the IP multicast address being queried when sending a
     /// Group-Specific Query or Group-and-Source-Specific Query).
-    uint32_t group_address : 32;
+    uint32_t group_address;
 
-    /// The Resv field is set to zero on transmission, and ignored on
-    /// reception.
-    uint8_t resv : 4;
-
-    /// The Suppress Router-Side Processing aka S Flag.
-    /// When set to one, the S Flag indicates to any receiving multicast
-    /// routers that they are to suppress the normal timer updates they
-    /// perform upon hearing a Query. It does not, however, suppress the
-    /// querier election or the normal "host-side" processing of a Query that
-    /// a router may be required to perform as a consequence of itself being
-    /// a group member.
-    bool suppress_router_side_processing : 1;
-
-    /// The Querier’s Robustness Variable aka QRV.
-    /// If non-zero, the QRV field contains the [Robustness Variable] value
-    /// used by the querier, i.e., the sender of the Query. If the querier’s
-    /// [Robustness Variable] exceeds 7, the maximum value of the QRV field,
-    /// the QRV is set to zero. Routers adopt the QRV value from the most
-    /// recently received Query as their own [Robustness Variable] value,
-    /// unless that most recently received QRV was zero, in which case the
-    /// receivers use the default [Robustness Variable] value specified in
-    /// section 8.1 or a statically configured value.
-    uint8_t robustness_variable : 3;
+    /// Gets the flags for this IGMP membership query, as a byte.
+    uint8_t flags;
 
     /// The Querier’s Query Interval Code aka QQIC.
     /// The Querier’s Query Interval Code field specifies the [Query
@@ -139,7 +158,7 @@ struct IgmpMembershipQueryHeader
     ///       +-+-+-+-+-+-+-+-+
     ///
     ///       QQI = (mant | 0x10) << (exp + 3)
-    uint8_t query_interval_code : 8;
+    uint8_t query_interval_code;
 
     /// The Number of Sources (N) field specifies how many source addresses
     /// are present in the Query. This number is zero in a General Query or
@@ -151,7 +170,7 @@ struct IgmpMembershipQueryHeader
     /// (N) field consume 12 octets, leaving 1464 octets for source
     /// addresses, which limits the number of source addresses to 366
     /// (1464/4).
-    uint16_t number_of_sources : 16;
+    uint16_t number_of_sources;
 
     /// Computes the Max Resp Time for this IGMP membership query message.
     unsigned int get_max_resp_time() const
