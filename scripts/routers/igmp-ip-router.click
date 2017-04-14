@@ -32,6 +32,7 @@ elementclass IgmpIpRouter {
 		-> frag :: IPFragmenter(1500)
 		-> [0]output;
 
+	// TODO: should ICMP errors be sent when IGMP is in use?
 	ipgw[1]
 		-> ICMPError($src_ip, parameterproblem)
 		-> [1]output;
@@ -59,12 +60,17 @@ elementclass IgmpIpRouter {
 		-> StripIPHeader
 		-> [1]igmp;
 
-	// At best, forward the packet. Don't read IGMP packets.
+	// At best, forward the packet. Don't read IGMP packets from this source.
 	input[1]
 		-> [0]igmp;
 
-	// Non-IGMP IP packets are sent to the IGMP router, which decides
-	// if they are to be broadcast to the managed network.
+	// We're dealing with a non-IGMP packet from the network managed by this router.
+	// Note that this means that the IP packet will arrive in this IGMP router _twice_:
+	// once as a packet from the managed network and once as a packet from any network.
+	//
+	// We could forward the packet here, but then we'd duplicate it -- and we don't want
+	// that. Instead, we'll just discard it and wait for the same packet to arrive from
+	// 'input[1]'.
 	ip_classifier[1]
-		-> [0]igmp;
+		-> Discard;
 }
