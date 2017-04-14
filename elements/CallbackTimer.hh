@@ -17,7 +17,7 @@ class CallbackTimer final
     CallbackTimer(const TArgs &... args)
         : callback(args...)
     {
-        timer = Box<Timer>(&callback_thunk, callback.get());
+        timer = make_rc<Timer>(&callback_thunk, callback.get());
     }
 
     /// Initializes this timer by assigning it to an owner.
@@ -57,7 +57,7 @@ class CallbackTimer final
         (*func)();
     }
 
-    Box<Timer> timer;
+    Rc<Timer> timer;
     Rc<TCallback> callback;
 };
 

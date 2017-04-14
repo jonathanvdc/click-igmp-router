@@ -63,4 +63,10 @@ class Rc final
     size_t *ref_count;
 };
 
+template <typename T, typename... TArgs>
+Rc<T> make_rc(const TArgs &... args)
+{
+    return Rc<T>(args...);
+}
+
 CLICK_ENDDECLS
