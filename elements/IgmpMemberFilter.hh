@@ -140,8 +140,8 @@ class IgmpMemberFilter
             return;
         }
 
-        IgmpFilterRecord *record_ptr;
-        if (!records.findp(multicast_address))
+        IgmpFilterRecord *record_ptr = records.findp(multicast_address);
+        if (record_ptr == nullptr)
         {
             records.insert(multicast_address, IgmpFilterRecord());
             record_ptr = records.findp(multicast_address);
