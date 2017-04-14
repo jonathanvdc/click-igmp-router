@@ -288,6 +288,12 @@ struct IgmpMembershipQuery
     /// The source addresses present in this query.
     Vector<IPAddress> source_addresses;
 
+    /// Tests if this membership query is a general query.
+    bool is_general_query() const
+    {
+        return group_address == IPAddress();
+    }
+
     /// Gets the size of this query, in bytes.
     size_t get_size() const
     {

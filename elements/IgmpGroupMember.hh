@@ -2,7 +2,7 @@
 
 #include <click/config.h>
 #include <click/element.hh>
-#include "EventSchedule.hh"
+#include "CallbackTimer.hh"
 #include "IgmpMessageManip.hh"
 #include "IgmpMemberFilter.hh"
 
@@ -47,9 +47,14 @@ public:
   void push(int port, Packet *packet);
 
 private:
-  struct IgmpMembershipQueryResponse
+  struct IgmpGeneralQueryResponse
   {
-    IgmpMembershipQuery query;
+    void operator()() const;
+  };
+
+  struct IgmpGroupQueryResponse
+  {
+    IPAddress group_address;
 
     void operator()() const;
   };
@@ -57,7 +62,8 @@ private:
   void push_listen(const IPAddress &multicast_address, const IgmpFilterRecord &record);
   void accept_query(const IgmpMembershipQuery &query);
   IgmpMemberFilter filter;
-  EventSchedule<IgmpMembershipQueryResponse> delayed_responses;
+  CallbackTimer<IgmpGeneralQueryResponse> general_response_timer;
+  HashMap<IPAddress, CallbackTimer<IgmpGroupQueryResponse>> group_response_timers;
 };
 
 CLICK_ENDDECLS

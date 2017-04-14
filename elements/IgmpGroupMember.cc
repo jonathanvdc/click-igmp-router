@@ -13,7 +13,6 @@
 
 CLICK_DECLS
 IgmpGroupMember::IgmpGroupMember()
-    : delayed_responses(this)
 {
 }
 
@@ -114,12 +113,82 @@ void IgmpGroupMember::accept_query(const IgmpMembershipQuery &query)
     //     Instead, it delays its response by a random amount of time, bounded
     //     by the Max Resp Time value derived from the Max Resp Code in the
     //     received Query message.
-    IgmpMembershipQueryResponse response;
-    response.query = query;
-    delayed_responses.schedule_after_csec(click_random(1, query.max_resp_time), response);
+    //
+    //     [...]
+    //
+    //     When a new Query with the Router-Alert option arrives on an
+    //     interface, provided the system has state to report, a delay for a
+    //     response is randomly selected in the range (0, [Max Resp Time]) where
+    //     Max Resp Time is derived from Max Resp Code in the received Query
+    //     message. The following rules are then used to determine if a Report
+    //     needs to be scheduled and the type of Report to schedule. The rules
+    //     are considered in order and only the first matching rule is applied.
+    //
+    //         1. If there is a pending response to a previous General Query
+    //            scheduled sooner than the selected delay, no additional response
+    //            needs to be scheduled.
+    //
+    //         2. If the received Query is a General Query, the interface timer is
+    //            used to schedule a response to the General Query after the
+    //            selected delay. Any previously pending response to a General
+    //            Query is canceled.
+    //
+    //         3. If the received Query is a Group-Specific Query or a Group-and-
+    //            Source-Specific Query and there is no pending response to a
+    //            previous Query for this group, then the group timer is used to
+    //            schedule a report. If the received Query is a Group-and-Source-
+    //            Specific Query, the list of queried sources is recorded to be used
+    //            when generating a response.
+    //
+    //         4. If there already is a pending response to a previous Query
+    //            scheduled for this group, and either the new Query is a Group-
+    //            Specific Query or the recorded source-list associated with the
+    //            group is empty, then the group source-list is cleared and a single
+    //            response is scheduled using the group timer. The new response is
+    //            scheduled to be sent at the earliest of the remaining time for the
+    //            pending report and the selected delay.
+
+    if (!general_response_timer.initialized())
+    {
+        general_response_timer.initialize(this);
+    }
+
+    uint32_t response_delay = click_random(1, query.max_resp_time - 1);
+    if (general_response_timer.scheduled() && general_response_timer.remaining_time_csec() <= response_delay)
+    {
+        // Case #1. Do nothing.
+        return;
+    }
+    else if (query.is_general_query())
+    {
+        // Case #2. (Re)schedule the response.
+        general_response_timer.schedule_after_csec(response_delay);
+        return;
+    }
+
+    auto response_timer_ptr = group_response_timers.findp(query.group_address);
+    if (response_timer_ptr == nullptr)
+    {
+        IgmpGroupQueryResponse response;
+        response.group_address = query.group_address;
+        group_response_timers.insert(query.group_address, response);
+        response_timer_ptr = group_response_timers.findp(query.group_address);
+        assert(response_timer_ptr != nullptr);
+        response_timer_ptr->initialize(this);
+    }
+    if (!response_timer_ptr->scheduled() && response_timer_ptr->remaining_time_csec() <= response_delay)
+    {
+        // Cases #3 and #4. Schedule a group-specific query, but only if that speeds
+        // up our response.
+        response_timer_ptr->schedule_after_csec(response_delay);
+    }
 }
 
-void IgmpGroupMember::IgmpMembershipQueryResponse::operator()() const
+void IgmpGroupMember::IgmpGeneralQueryResponse::operator()() const
+{
+}
+
+void IgmpGroupMember::IgmpGroupQueryResponse::operator()() const
 {
 }
 
