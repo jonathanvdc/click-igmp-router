@@ -209,7 +209,7 @@ class IgmpRouterFilter
         records.insert(multicast_address, IgmpRouterFilterRecord());
         auto record_ptr = records.findp(multicast_address);
         record_ptr->filter_mode = filter_mode;
-        if (filter_mode == IgmpFilterMode::Exclude && enable_timers)
+        if (enable_timers)
         {
             record_ptr->timer = CallbackTimer<IgmpRouterGroupRecordCallback>(multicast_address, this);
             record_ptr->timer.initialize(owner);

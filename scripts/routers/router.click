@@ -12,41 +12,50 @@
 //	[2]: packets sent to the 192.168.3.0/24 network
 //  [3]: packets destined for the router itself
 
+require(library igmp-ip-router.click)
+
 elementclass Router {
 	$server_address, $client1_address, $client2_address |
+
+	// According to the spec:
+	//
+	//     Multicast routers implementing IGMPv3 keep state per group per
+	//     attached network.
+	//
+	// IgmpRouter/IgmpIpRouter do that _for just one network._
+
+	// TODO: is $server_address:ip the right address for the router?
+	igmp_server :: IgmpIpRouter($server_address:ip);
+	igmp_client1 :: IgmpIpRouter($server_address:ip);
+	igmp_client2 :: IgmpIpRouter($server_address:ip);
+
+	igmp_in_switch :: PaintSwitch;
+	igmp_in_switch[0] -> Discard;
+	igmp_in_switch[1] -> igmp_server;
+	igmp_in_switch[2] -> igmp_client1;
+	igmp_in_switch[3] -> igmp_client2;
+
+	igmp_in_tee :: Tee(5);
+	igmp_in_tee[0] -> [1]igmp_server;
+	igmp_in_tee[1] -> [1]igmp_client1;
+	igmp_in_tee[2] -> [1]igmp_client2;
+	igmp_in_tee[3] -> igmp_in_switch;
+	igmp_in_tee[4]
+		-> rt :: StaticIPLookup(
+			$server_address:ip/32 0,
+			$client1_address:ip/32 0,
+			$client2_address:ip/32 0,
+			$server_address:ipnet 1,
+			$client1_address:ipnet 2,
+			$client2_address:ipnet 3);
 
 	// ARP responses are copied to each ARPQuerier and the host.
 	arpt :: Tee (3);
 
-	igmp :: IgmpRouter()
-		-> IgmpSetChecksum
-		-> IgmpIpEncap($server_address:ip) // TODO: is $server_address:ip the right address for this IP-encap?
-		-> IPFragmenter(1500)
-		-> arpt;
-
-	// IGMP tells us the packet is a multicast packet for the network.
-	igmp[1]
-		-> arpt;
-
-	// IGMP tells us that it's something else.
-	igmp[2]
-		-> rt :: StaticIPLookup(
-					$server_address:ip/32 0,
-					$client1_address:ip/32 0,
-					$client2_address:ip/32 0,
-					$server_address:ipnet 1,
-					$client1_address:ipnet 2,
-					$client2_address:ipnet 3);
-
 	// Shared IP input path and routing table
 	ip :: Strip(14)
 		-> CheckIPHeader
-		-> ip_classifier :: IPClassifier(ip proto igmp, -)
-		-> StripIPHeader
-		-> [1]igmp;
-
-	ip_classifier[1]
-		-> [0]igmp;
+		-> igmp_in_tee;
 	
 	// Input and output paths for interface 0
 	input
@@ -55,7 +64,8 @@ elementclass Router {
 		-> ARPResponder($server_address)
 		-> output;
 
-	server_arpq :: ARPQuerier($server_address)
+	igmp_server
+		-> server_arpq :: ARPQuerier($server_address)
 		-> output;
 
 	server_class[1]
@@ -73,7 +83,8 @@ elementclass Router {
 		-> ARPResponder($client1_address)
 		-> [1]output;
 
-	client1_arpq :: ARPQuerier($client1_address)
+	igmp_client1
+		-> client1_arpq :: ARPQuerier($client1_address)
 		-> [1]output;
 
 	client1_class[1]
@@ -91,7 +102,8 @@ elementclass Router {
 		-> ARPResponder($client2_address)
 		-> [2]output;
 
-	client2_arpq :: ARPQuerier($client2_address)
+	igmp_client2
+		-> client2_arpq :: ARPQuerier($client2_address)
 		-> [2]output;
 
 	client2_class[1]
