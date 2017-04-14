@@ -12,7 +12,7 @@
 
 CLICK_DECLS
 IgmpRouter::IgmpRouter()
-    : filter(this)
+    : filter(this, false)
 {
 }
 

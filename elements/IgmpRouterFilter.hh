@@ -157,8 +157,8 @@ struct IgmpRouterFilterRecord
 class IgmpRouterFilter
 {
   public:
-    IgmpRouterFilter(Element *owner)
-        : owner(owner)
+    IgmpRouterFilter(Element *owner, bool enable_timers)
+        : owner(owner), enable_timers(enable_timers)
     {
     }
 
@@ -194,7 +194,10 @@ class IgmpRouterFilter
         group_record.source_records.push_back(
             IgmpRouterSourceRecord(multicast_address, source_address, this));
         auto &record = group_record.source_records[group_record.source_records.size() - 1];
-        record.initialize(owner);
+        if (enable_timers)
+        {
+            record.initialize(owner);
+        }
         return record;
     }
 
@@ -206,7 +209,7 @@ class IgmpRouterFilter
         records.insert(multicast_address, IgmpRouterFilterRecord());
         auto record_ptr = records.findp(multicast_address);
         record_ptr->filter_mode = filter_mode;
-        if (filter_mode == IgmpFilterMode::Exclude)
+        if (filter_mode == IgmpFilterMode::Exclude && enable_timers)
         {
             record_ptr->timer = CallbackTimer<IgmpRouterGroupRecordCallback>(multicast_address, this);
             record_ptr->timer.initialize(owner);
@@ -224,6 +227,7 @@ class IgmpRouterFilter
   private:
     Element *owner;
     IgmpRouterVariables vars;
+    bool enable_timers;
     HashMap<IPAddress, IgmpRouterFilterRecord> records;
 };
 
