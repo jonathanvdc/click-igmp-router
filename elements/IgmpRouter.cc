@@ -150,7 +150,6 @@ void IgmpRouter::query_multicast_group(const IPAddress &multicast_address)
     }
 
     query.robustness_variable = filter.get_router_variables().get_robustness_variable();
-    click_chatter("robustness variable: %d", query.robustness_variable);
 
     query.query_interval = filter.get_router_variables().get_query_interval();
 
