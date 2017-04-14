@@ -154,6 +154,7 @@ void IgmpRouter::query_multicast_group(const IPAddress &multicast_address)
 
     query.query_interval = filter.get_router_variables().get_query_interval();
 
+    // Create the packet.
     size_t tailroom = 0;
     size_t packetsize = query.get_size();
     size_t headroom = sizeof(click_ether) + sizeof(click_ip);
@@ -161,11 +162,14 @@ void IgmpRouter::query_multicast_group(const IPAddress &multicast_address)
     if (packet == 0)
         return click_chatter("cannot make packet!");
 
+    // Fill it with data.
     auto data_ptr = packet->data();
     query.write(data_ptr);
 
+    // Set its destination IP.
     packet->set_dst_ip_anno(all_systems_multicast_address);
 
+    // Push it out.
     output(0).push(packet);
 }
 
