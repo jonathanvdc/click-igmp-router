@@ -53,6 +53,7 @@ void IgmpRouter::handle_igmp_packet(Packet *packet)
     if (!is_igmp_v3_membership_report(packet->data()))
     {
         // Silently ignore non-membership report--messages.
+        packet->kill();
         return;
     }
 
@@ -112,6 +113,7 @@ void IgmpRouter::handle_igmp_packet(Packet *packet)
             query_multicast_group(group.multicast_address);
         }
     }
+    packet->kill();
 }
 
 void IgmpRouter::query_multicast_group(const IPAddress &multicast_address)
