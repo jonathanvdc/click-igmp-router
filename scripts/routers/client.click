@@ -3,7 +3,7 @@
 // Packets for the network are put on output 0
 // Packets for the host are put on output 1
 
-require(library igmp-ip-encap.click)
+require(library igmp-ip-group-member.click)
 
 elementclass Client {
 	$address, $gateway |
@@ -12,9 +12,7 @@ elementclass Client {
 		-> arpq :: ARPQuerier($address)
 		-> output;
 
-	igmp :: IgmpGroupMember()
-		-> IgmpSetChecksum
-		-> IgmpIpEncap($address:ip)
+	igmp :: IgmpIpGroupMember($address:ip)
 		-> frag;
 
 	// IGMP tells us the packet is a multicast packet for an address to which

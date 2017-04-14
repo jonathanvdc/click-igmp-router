@@ -12,8 +12,8 @@ elementclass IgmpIpRouter {
 	//         1. IP packets from other networks.
 	//
 	//     * Output:
-	//         0. IP packets for the network managed by this router instance.
-	//         1. Erroneous IP packets.
+	//         0. (Fragmented) IP packets for the network managed by this router instance.
+	//         1. IP error packets.
 	//
 
 	igmp :: IgmpRouter()

@@ -4,11 +4,17 @@
 // Packets for the network are put on output 0
 // Packets for the host are put on output 1
 
+require(library igmp-ip-group-member.click)
+
 elementclass Server {
 	$address, $gateway |
 
-	igmp :: IgmpGroupMember()
-		-> Discard;
+	frag :: IPFragmenter(1500)
+		-> arpq :: ARPQuerier($address)
+		-> output;
+
+	igmp :: IgmpIpGroupMember($address:ip)
+		-> frag;
 
 	// IGMP tells us the packet is a multicast packet for an address to which
 	// we've subscribed.
@@ -32,9 +38,7 @@ elementclass Server {
 		-> ipgw :: IPGWOptions($address)
 		-> FixIPSrc($address)
 		-> ttl :: DecIPTTL
-		-> frag :: IPFragmenter(1500)
-		-> arpq :: ARPQuerier($address)
-		-> output;
+		-> frag;
 
 	ipgw[1]
 		-> ICMPError($address, parameterproblem)

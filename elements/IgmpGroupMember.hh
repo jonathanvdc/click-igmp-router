@@ -20,6 +20,8 @@ public:
   //         0. Incoming IP packets which are filtered based on their source
   //            address.
   //
+  //         1. Incoming IGMP packets.
+  //
   //     Output:
   //         0. Generated IGMP packets.
   //
@@ -30,7 +32,7 @@ public:
   //            for the current host.
 
   const char *class_name() const { return "IgmpGroupMember"; }
-  const char *port_count() const { return "1/3"; }
+  const char *port_count() const { return "2/3"; }
   const char *processing() const { return PUSH; }
 
   int configure(Vector<String> &, ErrorHandler *);

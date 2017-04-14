@@ -81,14 +81,21 @@ void IgmpGroupMember::add_handlers()
 
 void IgmpGroupMember::push(int port, Packet *packet)
 {
-    auto ip_header = (click_ip *)packet->data();
-    if (filter.is_listening_to(ip_header->ip_dst, ip_header->ip_src))
+    if (port == 0)
     {
-        output(1).push(packet);
+        auto ip_header = (click_ip *)packet->data();
+        if (filter.is_listening_to(ip_header->ip_dst, ip_header->ip_src))
+        {
+            output(1).push(packet);
+        }
+        else
+        {
+            output(2).push(packet);
+        }
     }
     else
     {
-        output(2).push(packet);
+        assert(port == 1);
     }
 }
 
