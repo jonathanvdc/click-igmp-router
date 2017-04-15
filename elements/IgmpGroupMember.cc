@@ -30,7 +30,12 @@ int IgmpGroupMember::configure(Vector<String> &conf, ErrorHandler *errh)
 
 void IgmpGroupMember::push_listen(const IPAddress &multicast_address, const IgmpFilterRecord &record)
 {
-    filter.listen(multicast_address, record);
+    if (!filter.listen(multicast_address, record))
+    {
+        // The mode wasn't changed.
+        return;
+    }
+
     click_chatter("IGMP group member: changing mode for %s", multicast_address.unparse().c_str());
 
     // Here's a relevant excerpt from the spec:

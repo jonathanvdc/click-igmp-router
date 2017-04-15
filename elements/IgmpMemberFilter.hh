@@ -109,6 +109,27 @@ Vector<T> difference_vectors(const Vector<T> &left, const Vector<T> &right)
     return results;
 }
 
+/// Tests if the lhs vector is a subset of the rhs vector.
+template <typename T>
+bool is_subset_vectors(const Vector<T> &subset, const Vector<T> &superset)
+{
+    for (const auto& item : subset)
+    {
+        if (!in_vector<T>(item, superset))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+/// Tests if the given vectors contain the same elements.
+template <typename T>
+bool set_equality_vectors(const Vector<T> &left, const Vector<T> &right)
+{
+    return is_subset_vectors(left, right) && is_subset_vectors(right, left);
+}
+
 /// A "filter" for IGMP packets. It decides which addresses are listened to and which are not.
 class IgmpMemberFilter
 {
@@ -135,8 +156,8 @@ class IgmpMemberFilter
     }
 
     /// Listens to the given multicast address. A list of source addresses are either explicitly included
-    /// or excluded.
-    void listen(const IPAddress &multicast_address, IgmpFilterMode filter_mode, const Vector<IPAddress> &source_addresses)
+    /// or excluded. A Boolean result tells if the filter's state has changed.
+    bool listen(const IPAddress &multicast_address, IgmpFilterMode filter_mode, const Vector<IPAddress> &source_addresses)
     {
         // According to the spec:
         //
@@ -157,37 +178,59 @@ class IgmpMemberFilter
 
         if (filter_mode == IgmpFilterMode::Include && source_addresses.size() == 0)
         {
-            records.erase(multicast_address);
-            return;
+            if (records.findp(multicast_address) == nullptr)
+            {
+                return false;
+            }
+            else
+            {
+                records.erase(multicast_address);
+                return true;
+            }
         }
 
+        bool has_changed = false;
         IgmpFilterRecord *record_ptr = records.findp(multicast_address);
         if (record_ptr == nullptr)
         {
             records.insert(multicast_address, IgmpFilterRecord());
             record_ptr = records.findp(multicast_address);
+            has_changed = true;
         }
-        record_ptr->filter_mode = filter_mode;
-        record_ptr->source_addresses = source_addresses;
+        if (record_ptr->filter_mode != filter_mode)
+        {
+            record_ptr->filter_mode = filter_mode;
+            has_changed = true;
+        }
+        
+        if (!set_equality_vectors(record_ptr->source_addresses, source_addresses))
+        {
+            record_ptr->source_addresses = source_addresses;
+            has_changed = true;
+        }
+
+        return has_changed;
     }
 
     /// Listens to the given multicast address. A filter record specifies a list of source addresses that
-    /// are either explicitly included or excluded.
-    void listen(const IPAddress &multicast_address, const IgmpFilterRecord &record)
+    /// are either explicitly included or excluded. A Boolean result tells if the filter's state has changed.
+    bool listen(const IPAddress &multicast_address, const IgmpFilterRecord &record)
     {
-        listen(multicast_address, record.filter_mode, record.source_addresses);
+        return listen(multicast_address, record.filter_mode, record.source_addresses);
     }
 
     /// Joins the multicast group with the given multicast address.
-    void join(const IPAddress &multicast_address)
+    /// A Boolean result tells if the filter's state has changed.
+    bool join(const IPAddress &multicast_address)
     {
-        listen(multicast_address, IgmpFilterMode::Exclude, Vector<IPAddress>());
+        return listen(multicast_address, IgmpFilterMode::Exclude, Vector<IPAddress>());
     }
 
     /// Leaves the multicast group with the given multicast address.
-    void leave(const IPAddress &multicast_address)
+    /// A Boolean result tells if the filter's state has changed.
+    bool leave(const IPAddress &multicast_address)
     {
-        listen(multicast_address, IgmpFilterMode::Include, Vector<IPAddress>());
+        return listen(multicast_address, IgmpFilterMode::Include, Vector<IPAddress>());
     }
 
     /// Tests if the IGMP filter is listening to the given source address for the given multicast
