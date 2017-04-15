@@ -26,8 +26,8 @@ elementclass Router {
 
 	// TODO: are these addresses correct? Do they matter?
 	igmp_multicast_server :: IgmpIpRouter($server_address:ip);
-	igmp_client1 :: IgmpIpRouter($server_address:ip);
-	igmp_client2 :: IgmpIpRouter($server_address:ip);
+	igmp_client1 :: IgmpIpRouter($client1_address:ip);
+	igmp_client2 :: IgmpIpRouter($client2_address:ip);
 
 	igmp_in_switch :: PaintSwitch;
 	igmp_in_switch[0] -> Discard;
