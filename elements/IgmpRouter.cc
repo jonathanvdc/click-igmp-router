@@ -265,6 +265,28 @@ void IgmpRouter::handle_igmp_membership_query(const IgmpMembershipQuery &query, 
         other_querier_present_timer.schedule_after_csec(
             filter.get_router_variables().get_other_querier_present_interval());
     }
+
+    // Oh, and here's a carefully-hidden part of the spec:
+    //
+    //     [...]
+    //     Routers adopt the QRV value from the most
+    //     recently received Query as their own [Robustness Variable] value,
+    //     unless that most recently received QRV was zero, in which case the
+    //     receivers use the default [Robustness Variable] value specified in
+    //     section 8.1 or a statically configured value.
+    //
+    // But it leaves a relatively important question unanswered: what
+    // happens to the 'startup_query_count' and 'last_member_query_count'
+    // variables? Their _defaults_ are derived from the robustness variable.
+    // Should they too change when the robustness variable is changed?
+    //
+    // SPEC INTERPRETATION: No. The spec does not mandate this (by neglecting to
+    // mention it), so doing it anyway would not comply with the spec. Default
+    // values are computed at configure-time and are then of no more consequence.
+    if (query.robustness_variable != 0)
+    {
+        filter.get_router_variables().get_robustness_variable() = query.robustness_variable;
+    }
 }
 
 void IgmpRouter::OtherQuerierGone::operator()() const

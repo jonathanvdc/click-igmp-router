@@ -103,6 +103,16 @@ struct IgmpRouterVariables
         return core_variables.robustness_variable;
     }
 
+    /// The Robustness Variable allows tuning for the expected packet loss on
+    /// a network. If a network is expected to be lossy, the Robustness
+    /// Variable may be increased. IGMP is robust to (Robustness Variable -
+    /// 1) packet losses. The Robustness Variable MUST NOT be zero, and
+    /// SHOULD NOT be one. Default: 2
+    unsigned int &get_robustness_variable()
+    {
+        return core_variables.robustness_variable;
+    }
+
     /// The Query Interval is the interval between General Queries sent by
     /// the Querier. Default: 125 seconds.
     ///
