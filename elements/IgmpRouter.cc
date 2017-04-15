@@ -24,6 +24,15 @@ int IgmpRouter::configure(Vector<String> &conf, ErrorHandler *errh)
 {
     if (cp_va_kparse(conf, this, errh, cpEnd) < 0)
         return -1;
+
+    // Keep track of the number of remaining startup general queries. See the SPEC INTERPRATION
+    // comment in 'IgmpRouter::SendPeriodicGeneralQuery::operator()() const' for an explanation.
+    startup_general_queries_remaining = filter.get_router_variables().get_startup_query_count();
+
+    general_query_timer = CallbackTimer<SendPeriodicGeneralQuery>(this);
+    general_query_timer.initialize(this);
+    general_query_timer.schedule_after_csec(
+        filter.get_router_variables().get_startup_query_interval());
     return 0;
 }
 
@@ -153,6 +162,12 @@ void IgmpRouter::query_multicast_group(const IPAddress &multicast_address)
 
     query.query_interval = filter.get_router_variables().get_query_interval();
 
+    // Transmit the query.
+    transmit_membership_query(query);
+}
+
+void IgmpRouter::transmit_membership_query(const IgmpMembershipQuery &query)
+{
     // Create the packet.
     size_t tailroom = 0;
     size_t packetsize = query.get_size();
@@ -170,6 +185,83 @@ void IgmpRouter::query_multicast_group(const IPAddress &multicast_address)
 
     // Push it out.
     output(0).push(packet);
+}
+
+void IgmpRouter::SendPeriodicGeneralQuery::operator()() const
+{
+    // IGMP routers should send periodic general queries, but the spec isn't abundantly
+    // clear on when and how that should happen. What little information the spec holds
+    // is scattered across various chapters.
+    //
+    // 6.1. Conditions for IGMP Queries
+    //
+    //     Multicast routers send General Queries periodically to request group
+    //     membership information from an attached network. These queries are
+    //     used to build and refresh the group membership state of systems on
+    //     attached networks. Systems respond to these queries by reporting
+    //     their group membership state (and their desired set of sources) with
+    //     Current-State Group Records in IGMPv3 Membership Reports.
+    //
+    //     [...]
+    //
+    // 8.2. Query Interval
+    //
+    //     The Query Interval is the interval between General Queries sent by
+    //     the Querier. Default: 125 seconds.
+    //
+    //     By varying the [Query Interval], an administrator may tune the number
+    //     of IGMP messages on the network; larger values cause IGMP Queries to
+    //     be sent less often.
+    //
+    // 8.3. Query Response Interval
+    //
+    //     The Max Response Time used to calculate the Max Resp Code inserted
+    //     into the periodic General Queries. Default: 100 (10 seconds)
+    //
+    //     By varying the [Query Response Interval], an administrator may tune
+    //     the burstiness of IGMP messages on the network; larger values make
+    //     the traffic less bursty, as host responses are spread out over a
+    //     larger interval. The number of seconds represented by the [Query
+    //     Response Interval] must be less than the [Query Interval].
+    //
+    // 8.6. Startup Query Interval
+    //
+    //     The Startup Query Interval is the interval between General Queries
+    //     sent by a Querier on startup. Default: 1/4 the Query Interval.
+    //
+    // That final paragraph is especially confusing: what does it mean for a Querier
+    // to be in 'startup' mode? The next section seems to shed some light on that.
+    //
+    // 8.7. Startup Query Count
+    //
+    //     The Startup Query Count is the number of Queries sent out on startup,
+    //     separated by the Startup Query Interval. Default: the Robustness
+    //     Variable.
+    //
+    // TODO: SPEC INTERPRETATION: we will send out [Startup Query Count] *General*
+    // Queries with an interval of [Startup Query Interval] between them.
+    // To do so, we maintain a counter ('startup_general_queries_remaining') which
+    // is set to the [Startup Query Count] at configure-time and is decremented
+    // on every 'startup' General Query send. Once the counter reaches zero,
+    // the [Query Interval] is used to space General Queries instead.
+
+    // Construct a General Query.
+    IgmpMembershipQuery query;
+    query.max_resp_time = elem->filter.get_router_variables().get_query_response_interval();
+    query.robustness_variable = elem->filter.get_router_variables().get_robustness_variable();
+    query.query_interval = elem->filter.get_router_variables().get_query_interval();
+
+    // Transmit the Query.
+    elem->transmit_membership_query(query);
+
+    // Reschedule the General Query timer.
+    auto interval = elem->filter.get_router_variables().get_query_interval();
+    if (elem->startup_general_queries_remaining > 0)
+    {
+        elem->startup_general_queries_remaining--;
+        interval = elem->filter.get_router_variables().get_startup_query_interval();
+    }
+    elem->general_query_timer.reschedule_after_csec(interval);
 }
 
 CLICK_ENDDECLS

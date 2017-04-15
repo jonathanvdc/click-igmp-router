@@ -2,6 +2,7 @@
 
 #include <click/config.h>
 #include <click/element.hh>
+#include "IgmpMessageManip.hh"
 #include "IgmpRouterFilter.hh"
 
 CLICK_DECLS
@@ -41,10 +42,29 @@ public:
   void push(int port, Packet *packet);
 
 private:
+  /// A timer callback that sends periodic general queries.
+  struct SendPeriodicGeneralQuery
+  {
+    SendPeriodicGeneralQuery()
+        : elem(nullptr)
+    {
+    }
+    SendPeriodicGeneralQuery(IgmpRouter *elem)
+        : elem(elem)
+    {
+    }
+    IgmpRouter *elem;
+
+    void operator()() const;
+  };
+
   void handle_igmp_packet(Packet *packet);
   void query_multicast_group(const IPAddress &multicast_address);
+  void transmit_membership_query(const IgmpMembershipQuery &query);
 
   IgmpRouterFilter filter;
+  CallbackTimer<SendPeriodicGeneralQuery> general_query_timer;
+  unsigned int startup_general_queries_remaining;
 };
 
 CLICK_ENDDECLS
