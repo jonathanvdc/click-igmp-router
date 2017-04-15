@@ -4,6 +4,10 @@ timeout 240 ./click-2.0.1/userlevel/click -p 10000 scripts/ipnetwork.click &
 sleep 5
 ./join.sh client31
 ./join.sh client22
+# Set client31's robustness to four.
+./set-client-robustness.sh client31 4
+# Set client31's unsolicited report interval to 0.5 seconds.
+./set-client-uri.sh client32 5
 sleep 5
 ./join.sh client21
 ./join.sh client32
