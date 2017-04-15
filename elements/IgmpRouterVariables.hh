@@ -137,6 +137,19 @@ struct IgmpRouterVariables
         return core_variables.query_response_interval;
     }
 
+    /// The Max Response Time used to calculate the Max Resp Code inserted
+    /// into the periodic General Queries. Default: 100 (10 seconds)
+    ///
+    /// By varying the [Query Response Interval], an administrator may tune
+    /// the burstiness of IGMP messages on the network; larger values make
+    /// the traffic less bursty, as host responses are spread out over a
+    /// larger interval. The number of seconds represented by the [Query
+    /// Response Interval] must be less than the [Query Interval].
+    unsigned int &get_query_response_interval()
+    {
+        return core_variables.query_interval;
+    }
+
     /// The Last Member Query Interval is the Max Response Time used to
     /// calculate the Max Resp Code inserted into Group-Specific Queries sent
     /// in response to Leave Group messages. It is also the Max Response
@@ -157,10 +170,38 @@ struct IgmpRouterVariables
         return core_variables.last_member_query_interval;
     }
 
+    /// The Last Member Query Interval is the Max Response Time used to
+    /// calculate the Max Resp Code inserted into Group-Specific Queries sent
+    /// in response to Leave Group messages. It is also the Max Response
+    /// Time used in calculating the Max Resp Code for Group-and-Source-
+    /// Specific Query messages. Default: 10 (1 second)
+    ///
+    /// Note that for values of LMQI greater than 12.8 seconds, a limited set
+    /// of values can be represented, corresponding to sequential values of
+    /// Max Resp Code. When converting a configured time to a Max Resp Code
+    /// value, it is recommended to use the exact value if possible, or the
+    /// next lower value if the requested value is not exactly representable.
+    ///
+    /// This value may be tuned to modify the "leave latency" of the network.
+    /// A reduced value results in reduced time to detect the loss of the
+    /// last member of a group or source.
+    unsigned int &get_last_member_query_interval()
+    {
+        return core_variables.last_member_query_interval;
+    }
+
     /// The Startup Query Count is the number of Queries sent out on startup,
     /// separated by the Startup Query Interval. Default: the Robustness
     /// Variable.
     unsigned int get_startup_query_count() const
+    {
+        return derived_variables.startup_query_count;
+    }
+
+    /// The Startup Query Count is the number of Queries sent out on startup,
+    /// separated by the Startup Query Interval. Default: the Robustness
+    /// Variable.
+    unsigned int &get_startup_query_count()
     {
         return derived_variables.startup_query_count;
     }
@@ -172,12 +213,29 @@ struct IgmpRouterVariables
         return derived_variables.startup_query_interval;
     }
 
+    /// The Startup Query Interval is the interval between General Queries
+    /// sent by a Querier on startup. Default: 1/4 the Query Interval.
+    unsigned int &get_startup_query_interval()
+    {
+        return derived_variables.startup_query_interval;
+    }
+
     /// The Last Member Query Count is the number of Group-Specific Queries
     /// sent before the router assumes there are no local members. The Last
     /// Member Query Count is also the number of Group-and-Source-Specific
     /// Queries sent before the router assumes there are no listeners for a
     /// particular source. Default: the Robustness Variable.
     unsigned int get_last_member_query_count() const
+    {
+        return derived_variables.last_member_query_count;
+    }
+
+    /// The Last Member Query Count is the number of Group-Specific Queries
+    /// sent before the router assumes there are no local members. The Last
+    /// Member Query Count is also the number of Group-and-Source-Specific
+    /// Queries sent before the router assumes there are no listeners for a
+    /// particular source. Default: the Robustness Variable.
+    unsigned int &get_last_member_query_count()
     {
         return derived_variables.last_member_query_count;
     }
