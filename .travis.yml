@@ -13,6 +13,7 @@ addons:
         packages:
             - gcc-5
             - g++-5
+            - tshark
 
 before_install:
     # Use GCC 5.
