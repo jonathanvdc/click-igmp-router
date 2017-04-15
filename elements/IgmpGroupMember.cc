@@ -236,10 +236,22 @@ int IgmpGroupMember::leave(const String &conf, Element *e, void *, ErrorHandler 
     return 0;
 }
 
+int IgmpGroupMember::config(const String &conf, Element *e, void *, ErrorHandler *errh)
+{
+    IgmpGroupMember *self = (IgmpGroupMember *)e;
+    if (cp_va_kparse(
+            conf, self, errh, "ROBUSTNESS", cpkN, cpUnsigned, &self->robustness_variable,
+            "UNSOLICITED_REPORT_INTERVAL", cpkN, cpUnsigned, &self->unsolicited_report_interval, cpEnd) < 0)
+        return -1;
+    else
+        return 0;
+}
+
 void IgmpGroupMember::add_handlers()
 {
     add_write_handler("join", &join, (void *)0);
     add_write_handler("leave", &leave, (void *)0);
+    add_write_handler("config", &config, (void *)0);
 }
 
 void IgmpGroupMember::push(int port, Packet *packet)

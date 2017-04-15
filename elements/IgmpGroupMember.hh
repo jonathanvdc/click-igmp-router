@@ -43,6 +43,7 @@ public:
 
   static int join(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
   static int leave(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+  static int config(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
 
   void add_handlers();
 
