@@ -14,6 +14,7 @@ addons:
             - gcc-5
             - g++-5
             - tshark
+            - telnet
 
 before_install:
     # Use GCC 5.
