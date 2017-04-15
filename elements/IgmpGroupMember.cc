@@ -208,7 +208,7 @@ int IgmpGroupMember::join(const String &conf, Element *e, void *, ErrorHandler *
 {
     IgmpGroupMember *self = (IgmpGroupMember *)e;
     IPAddress to;
-    if (cp_va_kparse(conf, self, errh, "TO", cpkM, cpIPAddress, &to, cpEnd) < 0)
+    if (cp_va_kparse(conf, self, errh, "GROUP", cpkM, cpIPAddress, &to, cpEnd) < 0)
         return -1;
 
     click_chatter("IGMP group member: join %s", to.unparse().c_str());
@@ -220,7 +220,7 @@ int IgmpGroupMember::leave(const String &conf, Element *e, void *, ErrorHandler 
 {
     IgmpGroupMember *self = (IgmpGroupMember *)e;
     IPAddress to;
-    if (cp_va_kparse(conf, self, errh, "TO", cpkM, cpIPAddress, &to, cpEnd) < 0)
+    if (cp_va_kparse(conf, self, errh, "GROUP", cpkM, cpIPAddress, &to, cpEnd) < 0)
         return -1;
 
     click_chatter("IGMP group member: leave %s", to.unparse().c_str());
