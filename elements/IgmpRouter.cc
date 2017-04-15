@@ -12,7 +12,7 @@
 
 CLICK_DECLS
 IgmpRouter::IgmpRouter()
-    : filter(this, false), query_schedule(this)
+    : filter(this, true), query_schedule(this)
 {
 }
 
@@ -94,11 +94,15 @@ void IgmpRouter::handle_igmp_packet(Packet *packet)
         }
         record.source_addresses = group.source_addresses;
 
+        auto old_record_ptr = filter.get_record(group.multicast_address);
+        bool was_exclude = old_record_ptr != nullptr && old_record_ptr->filter_mode == IgmpFilterMode::Exclude;
+
         // Update the filter's state.
         filter.receive_current_state_record(group.multicast_address, record);
 
-        // If the group indicated a change, then we need to generate IGMP queries.
-        if (group.is_change())
+        // If the filter record was in EXCLUDE mode and we received a TO_IN group record,
+        // then we need to generate IGMP group-specific queries.
+        if (was_exclude && group.type == IgmpV3GroupRecordType::ChangeToIncludeMode)
         {
             // According to the spec:
             //
