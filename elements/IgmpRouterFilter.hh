@@ -58,9 +58,9 @@ class IgmpRouterSourceRecord final
         timer.schedule_after_msec(delta_msec);
     }
 
-    void schedule_after_csec(uint32_t delta_csec)
+    void schedule_after_dsec(uint32_t delta_dsec)
     {
-        schedule_after_msec(delta_csec * 100);
+        schedule_after_msec(delta_dsec * 100);
     }
 
   private:
@@ -344,7 +344,7 @@ inline void IgmpRouterFilter::receive_current_state_record(
             for (const auto &source_address : current_state_record.source_addresses)
             {
                 auto &record = get_or_create_source_record(*record_ptr, multicast_address, source_address);
-                record.schedule_after_csec(get_router_variables().get_group_membership_interval());
+                record.schedule_after_dsec(get_router_variables().get_group_membership_interval());
             }
         }
         else
@@ -371,7 +371,7 @@ inline void IgmpRouterFilter::receive_current_state_record(
             });
 
             // Set the group timer to the GMI.
-            record_ptr->timer.schedule_after_csec(get_router_variables().get_group_membership_interval());
+            record_ptr->timer.schedule_after_dsec(get_router_variables().get_group_membership_interval());
         }
     }
     else
@@ -389,7 +389,7 @@ inline void IgmpRouterFilter::receive_current_state_record(
             for (const auto &source_address : current_state_record.source_addresses)
             {
                 auto &record = get_or_create_source_record(*record_ptr, multicast_address, source_address);
-                record.schedule_after_csec(get_router_variables().get_group_membership_interval());
+                record.schedule_after_dsec(get_router_variables().get_group_membership_interval());
             }
         }
         else
@@ -426,7 +426,7 @@ inline void IgmpRouterFilter::receive_current_state_record(
                      record_ptr->excluded_addresses))
             {
                 auto &record = get_or_create_source_record(*record_ptr, multicast_address, source_address);
-                record.schedule_after_csec(get_router_variables().get_group_membership_interval());
+                record.schedule_after_dsec(get_router_variables().get_group_membership_interval());
             }
 
             // Update the list of excluded addresses.
@@ -434,7 +434,7 @@ inline void IgmpRouterFilter::receive_current_state_record(
                 record_ptr->excluded_addresses, current_state_record.source_addresses);
 
             // Set the group timer to the GMI.
-            record_ptr->timer.schedule_after_csec(get_router_variables().get_group_membership_interval());
+            record_ptr->timer.schedule_after_dsec(get_router_variables().get_group_membership_interval());
         }
     }
 }

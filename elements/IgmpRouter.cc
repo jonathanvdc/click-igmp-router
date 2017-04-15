@@ -38,7 +38,7 @@ void IgmpRouter::init_startup_queries()
 
     general_query_timer = CallbackTimer<SendPeriodicGeneralQuery>(this);
     general_query_timer.initialize(this);
-    general_query_timer.schedule_after_csec(
+    general_query_timer.schedule_after_dsec(
         filter.get_router_variables().get_startup_query_interval());
 }
 
@@ -148,7 +148,7 @@ void IgmpRouter::handle_igmp_packet(Packet *packet)
             auto record_ptr = filter.get_record(group.multicast_address);
             if (record_ptr != nullptr)
             {
-                record_ptr->timer.schedule_after_csec(
+                record_ptr->timer.schedule_after_dsec(
                     filter.get_router_variables().get_last_member_query_time());
             }
 
@@ -159,11 +159,11 @@ void IgmpRouter::handle_igmp_packet(Packet *packet)
             event();
 
             // Schedule group-specific queries.
-            uint32_t delta_csec = 0;
+            uint32_t delta_dsec = 0;
             for (unsigned int i = 0; i < filter.get_router_variables().get_last_member_query_count() - 1; i++)
             {
-                delta_csec += filter.get_router_variables().get_last_member_query_interval();
-                query_schedule.schedule_after_csec(delta_csec, event);
+                delta_dsec += filter.get_router_variables().get_last_member_query_interval();
+                query_schedule.schedule_after_dsec(delta_dsec, event);
             }
         }
     }
@@ -213,7 +213,7 @@ void IgmpRouter::handle_igmp_membership_query(const IgmpMembershipQuery &query, 
         auto record_ptr = filter.get_record(query.group_address);
         if (record_ptr != nullptr)
         {
-            record_ptr->timer.schedule_after_csec(
+            record_ptr->timer.schedule_after_dsec(
                 filter.get_router_variables().get_last_member_query_time());
         }
     }
@@ -262,7 +262,7 @@ void IgmpRouter::handle_igmp_membership_query(const IgmpMembershipQuery &query, 
 
         other_querier_present_timer = CallbackTimer<OtherQuerierGone>(this);
         other_querier_present_timer.initialize(this);
-        other_querier_present_timer.schedule_after_csec(
+        other_querier_present_timer.schedule_after_dsec(
             filter.get_router_variables().get_other_querier_present_interval());
     }
 
@@ -348,7 +348,7 @@ void IgmpRouter::SendGroupSpecificQuery::operator()() const
     //     the query message.
     auto record_ptr = elem->filter.get_record(group_address);
     auto lmqt = elem->filter.get_router_variables().get_last_member_query_time();
-    if (record_ptr->timer.scheduled() && record_ptr->timer.remaining_time_csec() > lmqt)
+    if (record_ptr->timer.scheduled() && record_ptr->timer.remaining_time_dsec() > lmqt)
     {
         query.suppress_router_side_processing = true;
     }
@@ -435,7 +435,7 @@ void IgmpRouter::SendPeriodicGeneralQuery::operator()() const
         elem->startup_general_queries_remaining--;
         interval = elem->filter.get_router_variables().get_startup_query_interval();
     }
-    elem->general_query_timer.reschedule_after_csec(interval);
+    elem->general_query_timer.reschedule_after_dsec(interval);
 }
 
 CLICK_ENDDECLS

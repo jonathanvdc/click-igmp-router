@@ -87,11 +87,11 @@ void IgmpGroupMember::push_listen(const IPAddress &multicast_address, const Igmp
     // with spacing chosen randomly from (0, [Unsolicited Report Interval]).
 
     state_changed_schedule.clear();
-    uint32_t delta_csec = 0;
+    uint32_t delta_dsec = 0;
     for (int i = 0; i < robustness_variable - 1; i++)
     {
-        delta_csec += click_random(1, unsolicited_report_interval - 1);
-        state_changed_schedule.schedule_after_csec(delta_csec, event);
+        delta_dsec += click_random(1, unsolicited_report_interval - 1);
+        state_changed_schedule.schedule_after_dsec(delta_dsec, event);
     }
 }
 
@@ -311,7 +311,7 @@ void IgmpGroupMember::accept_query(const IgmpMembershipQuery &query)
     }
 
     uint32_t response_delay = click_random(1, query.max_resp_time - 1);
-    if (general_response_timer.scheduled() && general_response_timer.remaining_time_csec() <= response_delay)
+    if (general_response_timer.scheduled() && general_response_timer.remaining_time_dsec() <= response_delay)
     {
         // Case #1. Do nothing.
         return;
@@ -319,7 +319,7 @@ void IgmpGroupMember::accept_query(const IgmpMembershipQuery &query)
     else if (query.is_general_query())
     {
         // Case #2. (Re)schedule the response.
-        general_response_timer.schedule_after_csec(response_delay);
+        general_response_timer.schedule_after_dsec(response_delay);
         return;
     }
 
@@ -334,11 +334,11 @@ void IgmpGroupMember::accept_query(const IgmpMembershipQuery &query)
         assert(response_timer_ptr != nullptr);
         response_timer_ptr->initialize(this);
     }
-    if (!response_timer_ptr->scheduled() && response_timer_ptr->remaining_time_csec() <= response_delay && query.source_addresses.size() == 0)
+    if (!response_timer_ptr->scheduled() && response_timer_ptr->remaining_time_dsec() <= response_delay && query.source_addresses.size() == 0)
     {
         // Cases #3 and #4. Schedule a group-specific query, but only if that speeds
         // up our response.
-        response_timer_ptr->schedule_after_csec(response_delay);
+        response_timer_ptr->schedule_after_dsec(response_delay);
     }
 }
 

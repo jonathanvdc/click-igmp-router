@@ -40,10 +40,10 @@ class EventSchedule final
         events.insert(id, timer);
     }
 
-    /// Makes the given event fire after the given number of centiseconds.
-    void schedule_after_csec(uint32_t delta_csec, const TEvent &event)
+    /// Makes the given event fire after the given number of deciseconds.
+    void schedule_after_dsec(uint32_t delta_dsec, const TEvent &event)
     {
-        schedule_after_msec(delta_csec * 100, event);
+        schedule_after_msec(delta_dsec * 100, event);
     }
 
     /// Clears this schedule.

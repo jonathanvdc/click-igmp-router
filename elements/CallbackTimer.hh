@@ -47,10 +47,10 @@ class CallbackTimer final
         }
     }
 
-    /// Schedules the timer to fire after the given amount of centiseconds.
-    void schedule_after_csec(uint32_t delta_csec)
+    /// Schedules the timer to fire after the given amount of deciseconds.
+    void schedule_after_dsec(uint32_t delta_dsec)
     {
-        schedule_after_msec(delta_csec * 100);
+        schedule_after_msec(delta_dsec * 100);
     }
 
     /// Schedules the timer to fire after the given amount of milliseconds.
@@ -62,11 +62,11 @@ class CallbackTimer final
         }
     }
 
-    /// Reschedules the timer to fire after the given amount of centiseconds
+    /// Reschedules the timer to fire after the given amount of deciseconds
     /// past the previous expiration time.
-    void reschedule_after_csec(uint32_t delta_csec)
+    void reschedule_after_dsec(uint32_t delta_dsec)
     {
-        reschedule_after_msec(delta_csec * 100);
+        reschedule_after_msec(delta_dsec * 100);
     }
 
     /// Reschedules the timer to fire after the given amount of milliseconds
@@ -94,8 +94,8 @@ class CallbackTimer final
         return (timer->expiry_steady() - Timestamp::recent_steady()).msec();
     }
 
-    /// Gets the amount of time remaining until this timer fires, in centiseconds.
-    uint32_t remaining_time_csec() const
+    /// Gets the amount of time remaining until this timer fires, in deciseconds.
+    uint32_t remaining_time_dsec() const
     {
         return remaining_time_msec() / 100;
     }
