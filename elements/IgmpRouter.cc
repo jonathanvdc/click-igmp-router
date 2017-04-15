@@ -12,7 +12,7 @@
 
 CLICK_DECLS
 IgmpRouter::IgmpRouter()
-    : filter(this, false)
+    : filter(this, false), query_schedule(this)
 {
 }
 
@@ -117,6 +117,7 @@ void IgmpRouter::handle_igmp_packet(Packet *packet)
             // The reduced version of the spec that I have to implement requires a "Send Q(G)"
             // on every table entry.
 
+            // Lower the group timer to LMQT.
             auto record_ptr = filter.get_record(group.multicast_address);
             if (record_ptr != nullptr)
             {
@@ -124,8 +125,19 @@ void IgmpRouter::handle_igmp_packet(Packet *packet)
                     filter.get_router_variables().get_last_member_query_time());
             }
 
-            // Query the given multicast group for its state.
-            query_multicast_group(group.multicast_address);
+            // Send one group-specific query right away and schedule more for later.
+            SendGroupSpecificQuery event{this, group.multicast_address};
+
+            // Transmit a group-specific query.
+            event();
+
+            // Schedule group-specific queries.
+            uint32_t delta_csec = 0;
+            for (unsigned int i = 0; i < filter.get_router_variables().get_last_member_query_count() - 1; i++)
+            {
+                delta_csec += filter.get_router_variables().get_last_member_query_interval();
+                query_schedule.schedule_after_csec(delta_csec, event);
+            }
         }
     }
     packet->kill();
@@ -133,37 +145,6 @@ void IgmpRouter::handle_igmp_packet(Packet *packet)
 
 void IgmpRouter::query_multicast_group(const IPAddress &multicast_address)
 {
-    click_chatter("IGMP router: querying multicast group %s", multicast_address.unparse().c_str());
-
-    IgmpMembershipQuery query;
-    // According to the spec:
-    //
-    //     The Last Member Query Interval is the Max Response Time used to
-    //     calculate the Max Resp Code inserted into Group-Specific Queries sent
-    //     in response to Leave Group messages.
-    query.max_resp_time = filter.get_router_variables().get_last_member_query_interval();
-
-    // Set the query's group address.
-    query.group_address = multicast_address;
-
-    // Spec says:
-    //
-    //     When transmitting a group specific query, if the group timer is
-    //     larger than LMQT, the "Suppress Router-Side Processing" bit is set in
-    //     the query message.
-    auto record_ptr = filter.get_record(multicast_address);
-    auto lmqt = filter.get_router_variables().get_last_member_query_time();
-    if (record_ptr->timer.scheduled() && record_ptr->timer.remaining_time_csec() > lmqt)
-    {
-        query.suppress_router_side_processing = true;
-    }
-
-    query.robustness_variable = filter.get_router_variables().get_robustness_variable();
-
-    query.query_interval = filter.get_router_variables().get_query_interval();
-
-    // Transmit the query.
-    transmit_membership_query(query);
 }
 
 void IgmpRouter::transmit_membership_query(const IgmpMembershipQuery &query)
@@ -185,6 +166,41 @@ void IgmpRouter::transmit_membership_query(const IgmpMembershipQuery &query)
 
     // Push it out.
     output(0).push(packet);
+}
+
+void IgmpRouter::SendGroupSpecificQuery::operator()() const
+{
+    click_chatter("IGMP router: querying multicast group %s", group_address.unparse().c_str());
+
+    IgmpMembershipQuery query;
+    // According to the spec:
+    //
+    //     The Last Member Query Interval is the Max Response Time used to
+    //     calculate the Max Resp Code inserted into Group-Specific Queries sent
+    //     in response to Leave Group messages.
+    query.max_resp_time = elem->filter.get_router_variables().get_last_member_query_interval();
+
+    // Set the query's group address.
+    query.group_address = group_address;
+
+    // Spec says:
+    //
+    //     When transmitting a group specific query, if the group timer is
+    //     larger than LMQT, the "Suppress Router-Side Processing" bit is set in
+    //     the query message.
+    auto record_ptr = elem->filter.get_record(group_address);
+    auto lmqt = elem->filter.get_router_variables().get_last_member_query_time();
+    if (record_ptr->timer.scheduled() && record_ptr->timer.remaining_time_csec() > lmqt)
+    {
+        query.suppress_router_side_processing = true;
+    }
+
+    query.robustness_variable = elem->filter.get_router_variables().get_robustness_variable();
+
+    query.query_interval = elem->filter.get_router_variables().get_query_interval();
+
+    // Transmit the query.
+    elem->transmit_membership_query(query);
 }
 
 void IgmpRouter::SendPeriodicGeneralQuery::operator()() const

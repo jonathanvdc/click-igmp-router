@@ -2,6 +2,8 @@
 
 #include <click/config.h>
 #include <click/element.hh>
+#include "CallbackTimer.hh"
+#include "EventSchedule.hh"
 #include "IgmpMessageManip.hh"
 #include "IgmpRouterFilter.hh"
 
@@ -58,11 +60,29 @@ private:
     void operator()() const;
   };
 
+  /// A timer callback that sends a group-specific query.
+  struct SendGroupSpecificQuery
+  {
+    SendGroupSpecificQuery()
+        : elem(nullptr), group_address()
+    {
+    }
+    SendGroupSpecificQuery(IgmpRouter *elem, const IPAddress &group_address)
+        : elem(elem), group_address(group_address)
+    {
+    }
+    IgmpRouter *elem;
+    IPAddress group_address;
+
+    void operator()() const;
+  };
+
   void handle_igmp_packet(Packet *packet);
   void query_multicast_group(const IPAddress &multicast_address);
   void transmit_membership_query(const IgmpMembershipQuery &query);
 
   IgmpRouterFilter filter;
+  EventSchedule<SendGroupSpecificQuery> query_schedule;
   CallbackTimer<SendPeriodicGeneralQuery> general_query_timer;
   unsigned int startup_general_queries_remaining;
 };
