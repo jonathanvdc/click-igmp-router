@@ -22,8 +22,9 @@ The `test-run.sh` script runs the `scripts/ipnetwork.click` script and then call
 If you want manual control, fire up Click yourself and run some handlers of your choice. You may want to consult the next section for a description of the utility scripts in this project. For example, spelling the commands below will make `client21` join the multicast network and then leave it.
 
 ```bash
+# You've got to specify '-p 10000' for the utility scripts to work.
 terminal_one$ ./click-2.0.1/userlevel/click -p 10000 scripts/ipnetwork.click
-# Meanwhile, in another terminal
+# Meanwhile, in another terminal.
 terminal_two$ ./shell/join.sh client21
 terminal_two$ ./shell/leave.sh client21
 # You're free to terminate the process running in terminal one at this point.
