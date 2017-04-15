@@ -124,6 +124,17 @@ struct IgmpRouterVariables
         return core_variables.query_interval;
     }
 
+    /// The Query Interval is the interval between General Queries sent by
+    /// the Querier. Default: 125 seconds.
+    ///
+    /// By varying the [Query Interval], an administrator may tune the number
+    /// of IGMP messages on the network; larger values cause IGMP Queries to
+    /// be sent less often.
+    unsigned int &get_query_interval()
+    {
+        return core_variables.query_interval;
+    }
+
     /// The Max Response Time used to calculate the Max Resp Code inserted
     /// into the periodic General Queries. Default: 100 (10 seconds)
     ///

@@ -438,5 +438,29 @@ void IgmpRouter::SendPeriodicGeneralQuery::operator()() const
     elem->general_query_timer.reschedule_after_dsec(interval);
 }
 
+int IgmpRouter::config(const String &conf, Element *e, void *, ErrorHandler *errh)
+{
+    IgmpRouter *self = (IgmpRouter *)e;
+    IgmpRouterVariables &router_vars = self->filter.get_router_variables();
+    if (cp_va_kparse(
+            conf, self, errh,
+            "ROBUSTNESS", cpkN, cpUnsigned, &router_vars.get_robustness_variable(),
+            "QUERY_INTERVAL", cpkN, cpUnsigned, &router_vars.get_query_interval(),
+            "QUERY_RESPONSE_INTERVAL", cpkN, cpUnsigned, &router_vars.get_query_response_interval(),
+            "LAST_MEMBER_QUERY_INTERVAL", cpkN, cpUnsigned, &router_vars.get_last_member_query_interval(),
+            "STARTUP_QUERY_COUNT", cpkN, cpUnsigned, &router_vars.get_startup_query_count(),
+            "STARTUP_QUERY_INTERVAL", cpkN, cpUnsigned, &router_vars.get_startup_query_interval(),
+            "LAST_MEMBER_QUERY_COUNT", cpkN, cpUnsigned, &router_vars.get_last_member_query_count(),
+            cpEnd) < 0)
+        return -1;
+    else
+        return 0;
+}
+
+void IgmpRouter::add_handlers()
+{
+    add_write_handler("config", &config, (void *)0);
+}
+
 CLICK_ENDDECLS
 EXPORT_ELEMENT(IgmpRouter)

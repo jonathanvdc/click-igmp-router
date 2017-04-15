@@ -41,6 +41,10 @@ class IgmpRouter : public Element
 
     int configure(Vector<String> &, ErrorHandler *);
 
+    static int config(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+
+    void add_handlers();
+
     void push(int port, Packet *packet);
 
   private:
