@@ -10,4 +10,4 @@
 # A reduced value results in reduced time to detect the loss of the
 # last member of a group or source.
 
-./configure-router.sh "LAST_MEMBER_QUERY_INTERVAL $1"
+$(dirname $0)/configure-router.sh "LAST_MEMBER_QUERY_INTERVAL $1"

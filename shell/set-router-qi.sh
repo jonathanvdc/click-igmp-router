@@ -7,4 +7,4 @@
 # of IGMP messages on the network; larger values cause IGMP Queries to
 # be sent less often.
 
-./configure-router.sh "QUERY_INTERVAL $1"
+$(dirname $0)/configure-router.sh "QUERY_INTERVAL $1"

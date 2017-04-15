@@ -3,4 +3,4 @@
 # The Startup Query Interval is the interval between General Queries
 # sent by a Querier on startup. Default: 1/4 the Query Interval.
 
-./configure-router.sh "STARTUP_QUERY_INTERVAL $1"
+$(dirname $0)/configure-router.sh "STARTUP_QUERY_INTERVAL $1"

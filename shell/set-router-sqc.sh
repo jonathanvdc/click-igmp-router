@@ -4,4 +4,4 @@
 # separated by the Startup Query Interval. Default: the Robustness
 # Variable.
 
-./config-router.sh "STARTUP_QUERY_COUNT $1"
+$(dirname $0)/config-router.sh "STARTUP_QUERY_COUNT $1"

@@ -6,4 +6,4 @@
 # Queries sent before the router assumes there are no listeners for a
 # particular source. Default: the Robustness Variable.
 
-./configure-router.sh "LAST_MEMBER_QUERY_COUNT $1"
+$(dirname $0)/configure-router.sh "LAST_MEMBER_QUERY_COUNT $1"

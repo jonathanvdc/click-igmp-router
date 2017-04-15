@@ -6,4 +6,4 @@
 # 1) packet losses. The Robustness Variable MUST NOT be zero, and
 # SHOULD NOT be one. Default: 2
 
-./configure-router.sh "ROBUSTNESS $1"
+$(dirname $0)/configure-router.sh "ROBUSTNESS $1"

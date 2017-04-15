@@ -9,4 +9,4 @@
 # larger interval. The number of seconds represented by the [Query
 # Response Interval] must be less than the [Query Interval].
 
-./configure-router.sh "QUERY_RESPONSE_INTERVAL $1"
+$(dirname $0)/configure-router.sh "QUERY_RESPONSE_INTERVAL $1"
