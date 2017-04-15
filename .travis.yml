@@ -21,7 +21,6 @@ before_install:
     - $CXX --version
 
     # Download, unzip and configure click.
-    - chmod +x ./download-click.sh
     - ./download-click.sh
 
     - pushd click-2.0.1
