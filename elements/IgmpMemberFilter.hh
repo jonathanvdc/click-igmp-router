@@ -113,6 +113,27 @@ Vector<T> difference_vectors(const Vector<T> &left, const Vector<T> &right)
 class IgmpMemberFilter
 {
   public:
+    /// Returns a pointer to the record for the given multicast address, or null if it is not found.
+    IgmpFilterRecord *get_record_or_null(const IPAddress &multicast_address) const
+    {
+        return records.findp(multicast_address);
+    }
+
+    typedef typename HashMap<IPAddress, IgmpFilterRecord>::const_iterator iterator;
+    typedef typename HashMap<IPAddress, IgmpFilterRecord>::const_iterator const_iterator;
+
+    /// Gets a constant iterator to the start of this filter's records.
+    const_iterator begin() const
+    {
+        return records.begin();
+    }
+
+    /// Gets a constant iterator to the end of this filter's records.
+    const_iterator end() const
+    {
+        return records.end();
+    }
+
     /// Listens to the given multicast address. A list of source addresses are either explicitly included
     /// or excluded.
     void listen(const IPAddress &multicast_address, IgmpFilterMode filter_mode, const Vector<IPAddress> &source_addresses)

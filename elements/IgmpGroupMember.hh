@@ -49,11 +49,14 @@ public:
 private:
   struct IgmpGeneralQueryResponse
   {
+    IgmpGroupMember *elem;
+
     void operator()() const;
   };
 
   struct IgmpGroupQueryResponse
   {
+    IgmpGroupMember *elem;
     IPAddress group_address;
 
     void operator()() const;
@@ -61,6 +64,7 @@ private:
 
   void push_listen(const IPAddress &multicast_address, const IgmpFilterRecord &record);
   void accept_query(const IgmpMembershipQuery &query);
+  void transmit_membership_report(const IgmpV3MembershipReport &report);
   IgmpMemberFilter filter;
   CallbackTimer<IgmpGeneralQueryResponse> general_response_timer;
   HashMap<IPAddress, CallbackTimer<IgmpGroupQueryResponse>> group_response_timers;

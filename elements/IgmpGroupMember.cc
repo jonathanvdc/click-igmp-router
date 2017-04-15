@@ -35,6 +35,11 @@ void IgmpGroupMember::push_listen(const IPAddress &multicast_address, const Igmp
     IgmpV3MembershipReport report;
     report.group_records.push_back(IgmpV3GroupRecord(multicast_address, record, true));
 
+    transmit_membership_report(report);
+}
+
+void IgmpGroupMember::transmit_membership_report(const IgmpV3MembershipReport &report)
+{
     size_t tailroom = 0;
     size_t packetsize = report.get_size();
     size_t headroom = sizeof(click_ether) + sizeof(click_ip);
@@ -150,6 +155,9 @@ void IgmpGroupMember::accept_query(const IgmpMembershipQuery &query)
 
     if (!general_response_timer.initialized())
     {
+        IgmpGeneralQueryResponse response;
+        response.elem = this;
+        general_response_timer = CallbackTimer<IgmpGeneralQueryResponse>(response);
         general_response_timer.initialize(this);
     }
 
@@ -170,6 +178,7 @@ void IgmpGroupMember::accept_query(const IgmpMembershipQuery &query)
     if (response_timer_ptr == nullptr)
     {
         IgmpGroupQueryResponse response;
+        response.elem = this;
         response.group_address = query.group_address;
         group_response_timers.insert(query.group_address, response);
         response_timer_ptr = group_response_timers.findp(query.group_address);
@@ -186,10 +195,65 @@ void IgmpGroupMember::accept_query(const IgmpMembershipQuery &query)
 
 void IgmpGroupMember::IgmpGeneralQueryResponse::operator()() const
 {
+    // Here's what the spec says about this.
+    //
+    //     When the timer in a pending response record expires, the system
+    //     transmits, on the associated interface, one or more Report messages
+    //     carrying one or more Current-State Records (see section 4.2.12), as
+    //     follows:
+    //
+    //         1. If the expired timer is the interface timer (i.e., it is a pending
+    //            response to a General Query), then one Current-State Record is
+    //            sent for each multicast address for which the specified interface
+    //            has reception state, as described in section 3.2. The Current-
+    //            State Record carries the multicast address and its associated
+    //            filter mode (MODE_IS_INCLUDE or MODE_IS_EXCLUDE) and source list.
+    //            Multiple Current-State Records are packed into individual Report
+    //            messages, to the extent possible.
+    //
+    //            [...]
+
+    // Create a membership report and fill it with group records for all the multicast
+    // addresses.
+    IgmpV3MembershipReport report;
+    for (auto iterator = elem->filter.begin(); iterator != elem->filter.end(); iterator++)
+    {
+        report.group_records.push_back(IgmpV3GroupRecord(iterator.key(), iterator.value(), false));
+    }
+
+    // And transmit it.
+    elem->transmit_membership_report(report);
 }
 
 void IgmpGroupMember::IgmpGroupQueryResponse::operator()() const
 {
+    // According to the spec:
+    //
+    //         2. If the expired timer is a group timer and the list of recorded
+    //            sources for the that group is empty (i.e., it is a pending
+    //            response to a Group-Specific Query), then if and only if the
+    //            interface has reception state for that group address, a single
+    //            Current-State Record is sent for that address. The Current-State
+    //            Record carries the multicast address and its associated filter
+    //            mode (MODE_IS_INCLUDE or MODE_IS_EXCLUDE) and source list.
+
+    // Create a membership report and give it a group record for a single multicast
+    // address.
+    IgmpV3MembershipReport report;
+    auto record_ptr = elem->filter.get_record_or_null(group_address);
+    if (record_ptr == nullptr)
+    {
+        IgmpFilterRecord record;
+        record.filter_mode = IgmpFilterMode::Include;
+        report.group_records.push_back(IgmpV3GroupRecord(group_address, record, false));
+    }
+    else
+    {
+        report.group_records.push_back(IgmpV3GroupRecord(group_address, *record_ptr, false));
+    }
+
+    // And transmit it.
+    elem->transmit_membership_report(report);
 }
 
 CLICK_ENDDECLS
