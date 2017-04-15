@@ -16,7 +16,7 @@ elementclass IgmpIpRouter {
 	//         1. IP error packets.
 	//
 
-	igmp :: IgmpRouter()
+	igmp :: IgmpRouter(ADDRESS $src_ip)
 		-> IgmpSetChecksum
 		-> IgmpIpEncap($src_ip)
 		-> IPFragmenter(1500)
@@ -57,6 +57,7 @@ elementclass IgmpIpRouter {
 		// IGMP packets have their IP headers stripped and are
 		// sent to the router as raw IGMP packets.
 		-> IPPrint("IGMP router: accepting IGMP packet")
+		-> MarkIPHeader
 		-> StripIPHeader
 		-> [1]igmp;
 

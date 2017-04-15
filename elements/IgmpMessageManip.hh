@@ -294,6 +294,12 @@ struct IgmpMembershipQuery
         return group_address == IPAddress();
     }
 
+    /// Tests if this membership query is a group-specific query.
+    bool is_group_specific_query() const
+    {
+        return !is_general_query() && source_addresses.size() == 0;
+    }
+    
     /// Gets the size of this query, in bytes.
     size_t get_size() const
     {

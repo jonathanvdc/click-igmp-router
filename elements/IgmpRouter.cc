@@ -22,9 +22,16 @@ IgmpRouter::~IgmpRouter()
 
 int IgmpRouter::configure(Vector<String> &conf, ErrorHandler *errh)
 {
-    if (cp_va_kparse(conf, this, errh, cpEnd) < 0)
+    if (cp_va_kparse(conf, this, errh, "ADDRESS", cpkM, cpIPAddress, &address, cpEnd) < 0)
         return -1;
 
+    init_startup_queries();
+
+    return 0;
+}
+
+void IgmpRouter::init_startup_queries()
+{
     // Keep track of the number of remaining startup general queries. See the SPEC INTERPRATION
     // comment in 'IgmpRouter::SendPeriodicGeneralQuery::operator()() const' for an explanation.
     startup_general_queries_remaining = filter.get_router_variables().get_startup_query_count();
@@ -33,7 +40,6 @@ int IgmpRouter::configure(Vector<String> &conf, ErrorHandler *errh)
     general_query_timer.initialize(this);
     general_query_timer.schedule_after_csec(
         filter.get_router_variables().get_startup_query_interval());
-    return 0;
 }
 
 void IgmpRouter::push(int port, Packet *packet)
@@ -63,9 +69,18 @@ void IgmpRouter::handle_igmp_packet(Packet *packet)
         "Received IGMP packet with type %d at router",
         (int)get_igmp_message_type(packet->data()));
 
+    if (is_igmp_membership_query(packet->data()))
+    {
+        // Handle IGMP membership queries.
+        auto data_ptr = packet->data();
+        handle_igmp_membership_query(IgmpMembershipQuery::read(data_ptr), packet->ip_header()->ip_src);
+        packet->kill();
+        return;
+    }
+
     if (!is_igmp_v3_membership_report(packet->data()))
     {
-        // Silently ignore non-membership report--messages.
+        // Silently ignore non-membership report--, non-query--messages.
         packet->kill();
         return;
     }
@@ -104,6 +119,14 @@ void IgmpRouter::handle_igmp_packet(Packet *packet)
         // then we need to generate IGMP group-specific queries.
         if (was_exclude && group.type == IgmpV3GroupRecordType::ChangeToIncludeMode)
         {
+            if (other_querier_present)
+            {
+                // We're not supposed to transmit requests if we're not the elected querier,
+                // so let's just refrain from doing that.
+                packet->kill();
+                return;
+            }
+
             // According to the spec:
             //
             //
@@ -147,8 +170,117 @@ void IgmpRouter::handle_igmp_packet(Packet *packet)
     packet->kill();
 }
 
-void IgmpRouter::query_multicast_group(const IPAddress &multicast_address)
+void IgmpRouter::handle_igmp_membership_query(const IgmpMembershipQuery &query, const IPAddress &source_address)
 {
+    // The spec says the following about membership query handling for routers:
+    //
+    //
+    //     6.6. Action on Reception of Queries
+    //
+    //     6.6.1. Timer Updates
+    //
+    //     When a router sends or receives a query with a clear Suppress
+    //     Router-Side Processing flag, it must update its timers to reflect the
+    //     correct timeout values for the group or sources being queried. The
+    //     following table describes the timer actions when sending or receiving
+    //     a Group-Specific or Group-and-Source Specific Query with the Suppress
+    //     Router-Side Processing flag not set.
+    //
+    //         Query      Action
+    //         -----      ------
+    //         Q(G)       Group Timer is lowered to LMQT
+    //
+    //     When a router sends or receives a query with the Suppress Router-Side
+    //     Processing flag set, it will not update its timers.
+    //
+    //     6.6.2. Querier Election
+    //
+    //     IGMPv3 elects a single querier per subnet using the same querier
+    //     election mechanism as IGMPv2, namely by IP address. When a router
+    //     receives a query with a lower IP address, it sets the Other-Querier-
+    //     Present timer to Other Querier Present Interval and ceases to send
+    //     queries on the network if it was the previously elected querier.
+    //     After its Other-Querier Present timer expires, it should begin
+    //     sending General Queries.
+    //
+    //     If a router receives an older version query, it MUST use the oldest
+    //     version of IGMP on the network. For a detailed description of
+    //     compatibility issues between IGMP versions see section 7.
+
+    // Update the timers if the S-flag is not set.
+    if (query.is_group_specific_query() && !query.suppress_router_side_processing)
+    {
+        auto record_ptr = filter.get_record(query.group_address);
+        if (record_ptr != nullptr)
+        {
+            record_ptr->timer.schedule_after_csec(
+                filter.get_router_variables().get_last_member_query_time());
+        }
+    }
+
+    // Check if the our IP address is smaller than the other router's. If so,
+    // then we need to go quiet.
+    if (ntohs(address.addr()) < ntohs(source_address.addr()))
+    {
+        // This meaning of this part of the spec is not abundantly clear:
+        //
+        //     [...] and ceases to send queries on the network if it was
+        //     the previously elected querier. After its Other-Querier Present
+        //     timer expires, it should begin sending General Queries.
+        //
+        // Specifically, it does not answer the following questions:
+        //
+        //     1. When the querier starts to transmit General Queries, should it
+        //        do so as if it was in 'startup' mode? The phrasing of
+        //        "it should begin sending General Queries" seems to hint that
+        //        this is the case.
+        //
+        //     2. Should the querier continue to schedule queries while it is not
+        //        the elected querier and simply not transmit them? Or should
+        //        the scheduling of queries be disabled altogether?
+        //
+        //        The difference between these approaches is observable: if the
+        //        querier schedules a batch of queries and becomes elected querier
+        //        halfway through the batch's schedule, then part of the batch
+        //        will still be transmitted.
+        //
+        // SPEC INTERPRETATION:
+        //
+        //     1. Yes, we should activate 'startup' mode.
+        //
+        //     2. We will clear our schedule and stop the querier from scheduling
+        //        new queries until it becomes the elected querier again.
+        //
+        //        This is arguably a more complicated interpretation than simply
+        //        preventing transmission and it's also a less verbatim way of
+        //        reading the spec, but I believe it to be the most sane approach.
+
+        other_querier_present = true;
+
+        general_query_timer.unschedule();
+        query_schedule.clear();
+
+        other_querier_present_timer = CallbackTimer<OtherQuerierGone>(this);
+        other_querier_present_timer.initialize(this);
+        other_querier_present_timer.schedule_after_csec(
+            filter.get_router_variables().get_other_querier_present_interval());
+    }
+}
+
+void IgmpRouter::OtherQuerierGone::operator()() const
+{
+    // The spec is somewhat... terse about what happens when the Other-Querier
+    // Present timer expires:
+    //
+    //     After its Other-Querier Present timer expires, it should begin
+    //     sending General Queries.
+    //
+    // SPEC INTERPRETATION: we will re-initialize the startup period for general
+    // queries once the Other-Querier Present timer expires. We will also set
+    // 'other_querier_present' to false.
+
+    elem->other_querier_present = false;
+    elem->init_startup_queries();
 }
 
 void IgmpRouter::transmit_membership_query(const IgmpMembershipQuery &query)
@@ -258,7 +390,7 @@ void IgmpRouter::SendPeriodicGeneralQuery::operator()() const
     //     separated by the Startup Query Interval. Default: the Robustness
     //     Variable.
     //
-    // TODO: SPEC INTERPRETATION: we will send out [Startup Query Count] *General*
+    // SPEC INTERPRETATION: we will send out [Startup Query Count] *General*
     // Queries with an interval of [Startup Query Interval] between them.
     // To do so, we maintain a counter ('startup_general_queries_remaining') which
     // is set to the [Startup Query Count] at configure-time and is decremented

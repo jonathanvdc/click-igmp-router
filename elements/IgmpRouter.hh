@@ -77,14 +77,34 @@ private:
     void operator()() const;
   };
 
-  void handle_igmp_packet(Packet *packet);
-  void query_multicast_group(const IPAddress &multicast_address);
-  void transmit_membership_query(const IgmpMembershipQuery &query);
+  /// A timer callback for the other querier present timer.
+  struct OtherQuerierGone
+  {
+    OtherQuerierGone()
+        : elem(nullptr)
+    {
+    }
+    OtherQuerierGone(IgmpRouter *elem)
+        : elem(elem)
+    {
+    }
+    IgmpRouter *elem;
 
+    void operator()() const;
+  };
+
+  void handle_igmp_packet(Packet *packet);
+  void handle_igmp_membership_query(const IgmpMembershipQuery &query, const IPAddress &source_address);
+  void transmit_membership_query(const IgmpMembershipQuery &query);
+  void init_startup_queries();
+
+  IPAddress address;
   IgmpRouterFilter filter;
   EventSchedule<SendGroupSpecificQuery> query_schedule;
   CallbackTimer<SendPeriodicGeneralQuery> general_query_timer;
   unsigned int startup_general_queries_remaining;
+  bool other_querier_present = false;
+  CallbackTimer<OtherQuerierGone> other_querier_present_timer;
 };
 
 CLICK_ENDDECLS

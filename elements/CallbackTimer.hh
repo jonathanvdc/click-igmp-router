@@ -79,6 +79,15 @@ class CallbackTimer final
         }
     }
 
+    /// Unschedules this timer.
+    void unschedule()
+    {
+        if (timer->initialized())
+        {
+            timer->unschedule();
+        }
+    }
+
     /// Gets the amount of time remaining until this timer fires, in milliseconds.
     uint32_t remaining_time_msec() const
     {

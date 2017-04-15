@@ -83,7 +83,7 @@ void IgmpGroupMember::push_listen(const IPAddress &multicast_address, const Igmp
     // Queue [Robustness Variable] - 1 transmissions, at intervals chosen at random from the
     // range (0, [Unsolicited Report Interval]).
 
-    // TODO: SPEC INTERPRETATION: 'at intervals' means that we should space the transmissions
+    // SPEC INTERPRETATION: 'at intervals' means that we should space the transmissions
     // with spacing chosen randomly from (0, [Unsolicited Report Interval]).
 
     state_changed_schedule.clear();

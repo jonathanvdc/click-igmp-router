@@ -21,7 +21,7 @@ struct IgmpRouterCoreVariables
     /// By varying the [Query Interval], an administrator may tune the number
     /// of IGMP messages on the network; larger values cause IGMP Queries to
     /// be sent less often.
-    unsigned int query_interval = 125;
+    unsigned int query_interval = 1250;
 
     /// The Max Response Time used to calculate the Max Resp Code inserted
     /// into the periodic General Queries. Default: 100 (10 seconds)
@@ -98,7 +98,7 @@ struct IgmpRouterVariables
     /// Variable may be increased. IGMP is robust to (Robustness Variable -
     /// 1) packet losses. The Robustness Variable MUST NOT be zero, and
     /// SHOULD NOT be one. Default: 2
-    unsigned int get_robustness_variable()
+    unsigned int get_robustness_variable() const
     {
         return core_variables.robustness_variable;
     }
@@ -109,7 +109,7 @@ struct IgmpRouterVariables
     /// By varying the [Query Interval], an administrator may tune the number
     /// of IGMP messages on the network; larger values cause IGMP Queries to
     /// be sent less often.
-    unsigned int get_query_interval()
+    unsigned int get_query_interval() const
     {
         return core_variables.query_interval;
     }
@@ -122,7 +122,7 @@ struct IgmpRouterVariables
     /// the traffic less bursty, as host responses are spread out over a
     /// larger interval. The number of seconds represented by the [Query
     /// Response Interval] must be less than the [Query Interval].
-    unsigned int get_query_response_interval()
+    unsigned int get_query_response_interval() const
     {
         return core_variables.query_response_interval;
     }
@@ -142,7 +142,7 @@ struct IgmpRouterVariables
     /// This value may be tuned to modify the "leave latency" of the network.
     /// A reduced value results in reduced time to detect the loss of the
     /// last member of a group or source.
-    unsigned int get_last_member_query_interval()
+    unsigned int get_last_member_query_interval() const
     {
         return core_variables.last_member_query_interval;
     }
@@ -150,14 +150,14 @@ struct IgmpRouterVariables
     /// The Startup Query Count is the number of Queries sent out on startup,
     /// separated by the Startup Query Interval. Default: the Robustness
     /// Variable.
-    unsigned int get_startup_query_count()
+    unsigned int get_startup_query_count() const
     {
         return derived_variables.startup_query_count;
     }
 
     /// The Startup Query Interval is the interval between General Queries
     /// sent by a Querier on startup. Default: 1/4 the Query Interval.
-    unsigned int get_startup_query_interval()
+    unsigned int get_startup_query_interval() const
     {
         return derived_variables.startup_query_interval;
     }
@@ -167,7 +167,7 @@ struct IgmpRouterVariables
     /// Member Query Count is also the number of Group-and-Source-Specific
     /// Queries sent before the router assumes there are no listeners for a
     /// particular source. Default: the Robustness Variable.
-    unsigned int get_last_member_query_count()
+    unsigned int get_last_member_query_count() const
     {
         return derived_variables.last_member_query_count;
     }
@@ -177,17 +177,27 @@ struct IgmpRouterVariables
     /// group or a particular source on a network.
     /// This value MUST be ((the Robustness Variable) times (the Query
     /// Interval)) plus (one Query Response Interval).
-    unsigned int get_group_membership_interval()
+    unsigned int get_group_membership_interval() const
     {
         return get_robustness_variable() * get_query_interval() + get_query_response_interval();
     }
 
-    // The Last Member Query Time is the time value represented by the Last
-    // Member Query Interval, multiplied by the Last Member Query Count. It
-    // is not a tunable value, but may be tuned by changing its components.
-    unsigned int get_last_member_query_time()
+    /// The Last Member Query Time is the time value represented by the Last
+    /// Member Query Interval, multiplied by the Last Member Query Count. It
+    /// is not a tunable value, but may be tuned by changing its components.
+    unsigned int get_last_member_query_time() const
     {
         return get_last_member_query_interval() * get_last_member_query_count();
+    }
+
+    /// The Other Querier Present Interval is the length of time that must
+    /// pass before a multicast router decides that there is no longer
+    /// another multicast router which should be the querier. This value
+    /// MUST be ((the Robustness Variable) times (the Query Interval)) plus
+    /// (one half of one Query Response Interval).
+    unsigned int get_other_querier_present_interval() const
+    {
+        return get_robustness_variable() * get_query_interval() + get_query_response_interval() / 2;
     }
 
   private:
