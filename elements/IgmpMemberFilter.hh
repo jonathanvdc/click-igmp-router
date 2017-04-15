@@ -114,7 +114,7 @@ class IgmpMemberFilter
 {
   public:
     /// Returns a pointer to the record for the given multicast address, or null if it is not found.
-    IgmpFilterRecord *get_record_or_null(const IPAddress &multicast_address) const
+    const IgmpFilterRecord *get_record_or_null(const IPAddress &multicast_address) const
     {
         return records.findp(multicast_address);
     }
