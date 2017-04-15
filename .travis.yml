@@ -35,3 +35,5 @@ before_install:
 script:
     # Run the script for half a minute.
     - timeout --preserve-status 30 click -p 1234 scripts/ipnetwork.click
+    # Run the test run script.
+    - ./test-run.sh
