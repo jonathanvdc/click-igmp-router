@@ -25,6 +25,14 @@ sleep 5
 ./leave.sh client21
 ./leave.sh client22
 ./leave.sh client31
-sleep 5
 # Now wait to make sure that the router keeps on forwarding messages to client32.
+sleep 150
+# Let's change some router variables before our time runs out.
+./set-router-lmqc.sh 3
+./set-router-lmqi.sh 20
+./set-router-qi.sh 1000
+./set-router-qri.sh 50
+./set-router-robustness.sh 3
+./set-router-sqc.sh 4
+./set-router-sqi.sh 250
 wait
