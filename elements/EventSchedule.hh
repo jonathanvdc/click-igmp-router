@@ -46,6 +46,13 @@ class EventSchedule final
         schedule_after_msec(delta_csec * 100, event);
     }
 
+    /// Clears this schedule.
+    void clear()
+    {
+        events.clear();
+        expired_events.clear();
+    }
+
   private:
     struct EventCallback
     {

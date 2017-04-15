@@ -2,7 +2,9 @@
 
 #include <click/config.h>
 #include <click/element.hh>
+#include <click/hashmap.hh>
 #include "CallbackTimer.hh"
+#include "EventSchedule.hh"
 #include "IgmpMessageManip.hh"
 #include "IgmpMemberFilter.hh"
 
@@ -47,6 +49,7 @@ public:
   void push(int port, Packet *packet);
 
 private:
+  /// A timer callback that responds to IGMP general queries.
   struct IgmpGeneralQueryResponse
   {
     IgmpGroupMember *elem;
@@ -54,6 +57,7 @@ private:
     void operator()() const;
   };
 
+  /// A timer callback that responds to IGMP group-specific queries.
   struct IgmpGroupQueryResponse
   {
     IgmpGroupMember *elem;
@@ -62,10 +66,38 @@ private:
     void operator()() const;
   };
 
+  /// A timer callback that transmits state-changed records.
+  struct IgmpTransmitStateChanged
+  {
+    IgmpGroupMember *elem;
+
+    void operator()() const;
+  };
+
   void push_listen(const IPAddress &multicast_address, const IgmpFilterRecord &record);
   void accept_query(const IgmpMembershipQuery &query);
   void transmit_membership_report(const IgmpV3MembershipReport &report);
+
+  /// Creates a state-changed report.
+  IgmpV3MembershipReport pop_state_changed_report();
+
+  /// The robustness variable for this group member. This field's
+  /// default value is 2.
+  uint8_t robustness_variable = 2;
+
+  // The Unsolicited Report Interval is the time between repetitions of a
+  // host’s initial report of membership in a group. Default: 1 second.
+  uint32_t unsolicited_report_interval = 10;
+
+  /// The filter for this IGMP group member.
   IgmpMemberFilter filter;
+
+  /// A schedule of state-changed transmissions.
+  EventSchedule<IgmpTransmitStateChanged> state_changed_schedule;
+  /// A map from IP multicast addresses to the number of times they should
+  /// be included in a state-changed report.
+  HashMap<IPAddress, int> state_change_transmission_counts;
+
   CallbackTimer<IgmpGeneralQueryResponse> general_response_timer;
   HashMap<IPAddress, CallbackTimer<IgmpGroupQueryResponse>> group_response_timers;
 };

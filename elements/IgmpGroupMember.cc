@@ -13,6 +13,7 @@
 
 CLICK_DECLS
 IgmpGroupMember::IgmpGroupMember()
+    : state_changed_schedule(this)
 {
 }
 
@@ -32,10 +33,149 @@ void IgmpGroupMember::push_listen(const IPAddress &multicast_address, const Igmp
     filter.listen(multicast_address, record);
     click_chatter("IGMP group member: changing mode for %s", multicast_address.unparse().c_str());
 
-    IgmpV3MembershipReport report;
-    report.group_records.push_back(IgmpV3GroupRecord(multicast_address, record, true));
+    // Here's a relevant excerpt from the spec:
+    //
+    //    An invocation of IPMulticastListen may cause the multicast reception
+    //    state of an interface to change, according to the rules in section
+    //    3.2.  Each such change affects the per-interface entry for a single
+    //    multicast address.
+    //
+    //    A change of interface state causes the system to immediately transmit
+    //    a State-Change Report from that interface.  The type and contents of
+    //    the Group Record(s) in that Report are determined by comparing the
+    //    filter mode and source list for the affected multicast address before
+    //    and after the change, according to the table below.  If no interface
+    //    state existed for that multicast address before the change (i.e., the
+    //    change consisted of creating a new per-interface record), or if no
+    //    state exists after the change (i.e., the change consisted of deleting
+    //    a per-interface record), then the "non-existent" state is considered
+    //    to have a filter mode of INCLUDE and an empty source list.
+    //
+    //      Old State         New State         State-Change Record Sent
+    //      ---------         ---------         ------------------------
+    //
+    //      INCLUDE (A)       EXCLUDE (B)       TO_EX (B)
+    //
+    //      EXCLUDE (A)       INCLUDE (B)       TO_IN (B)
+    //
+    //
+    //    To cover the possibility of the State-Change Report being missed by
+    //    one or more multicast routers, it is retransmitted [Robustness
+    //    Variable] - 1 more times, at intervals chosen at random from the
+    //    range (0, [Unsolicited Report Interval]).
 
-    transmit_membership_report(report);
+    auto retransmission_count_ptr = state_change_transmission_counts.findp(multicast_address);
+    if (retransmission_count_ptr == nullptr)
+    {
+        state_change_transmission_counts.insert(multicast_address, robustness_variable);
+    }
+    else
+    {
+        *retransmission_count_ptr = robustness_variable;
+    }
+
+    IgmpTransmitStateChanged event;
+    event.elem = this;
+
+    // Transmit a report right away.
+    event();
+
+    // Queue [Robustness Variable] - 1 transmissions, at intervals chosen at random from the
+    // range (0, [Unsolicited Report Interval]).
+
+    // TODO: SPEC INTERPRETATION: 'at intervals' means that we should space the transmissions
+    // with spacing chosen randomly from (0, [Unsolicited Report Interval]).
+
+    state_changed_schedule.clear();
+    uint32_t delta_csec = 0;
+    for (int i = 0; i < robustness_variable - 1; i++)
+    {
+        delta_csec += click_random(1, unsolicited_report_interval - 1);
+        state_changed_schedule.schedule_after_csec(delta_csec, event);
+    }
+}
+
+IgmpV3MembershipReport IgmpGroupMember::pop_state_changed_report()
+{
+    // Behold the spec:
+    //
+    //    If more changes to the same interface state entry occur before all
+    //    the retransmissions of the State-Change Report for the first change
+    //    have been completed, each such additional change triggers the
+    //    immediate transmission of a new State-Change Report.
+    //
+    //    The contents of the new transmitted report are calculated as follows.
+    //    As was done with the first report, the interface state for the
+    //    affected group before and after the latest change is compared. The
+    //    report records expressing the difference are built according to the
+    //    table above. However these records are not transmitted in a message
+    //    but instead merged with the contents of the pending report, to create
+    //    the new State-Change report. The rules for merging the difference
+    //    report resulting from the state change and the pending report are
+    //    described below.
+    //
+    //    The transmission of the merged State-Change Report terminates
+    //    retransmissions of the earlier State-Change Reports for the same
+    //    multicast address, and becomes the first of [Robustness Variable]
+    //    transmissions of State-Change Reports.
+    //
+    //    Each time a source is included in the difference report calculated
+    //    above, retransmission state for that source needs to be maintained
+    //    until [Robustness Variable] State-Change reports have been sent by
+    //    the host. This is done in order to ensure that a series of
+    //    successive state changes do not break the protocol robustness.
+    //
+    //    If the interface reception-state change that triggers the new report
+    //    is a filter-mode change, then the next [Robustness Variable] State-
+    //    Change Reports will include a Filter-Mode-Change record.  This
+    //    applies even if any number of source-list changes occur in that
+    //    period.  The host has to maintain retransmission state for the group
+    //    until the [Robustness Variable] State-Change reports have been sent.
+    //    When [Robustness Variable] State-Change reports with Filter-Mode-
+    //    Change records have been transmitted after the last filter-mode
+    //    change, and if source-list changes to the interface reception have
+    //    scheduled additional reports, then the next State-Change report will
+    //    include Source-List-Change records.
+    //
+    //    Each time a State-Change Report is transmitted, the contents are
+    //    determined as follows. If the report should contain a Filter-Mode-
+    //    Change record, then if the current filter-mode of the interface is
+    //    INCLUDE, a TO_IN record is included in the report, otherwise a TO_EX
+    //    record is included. The
+    //    contents of these records are built according to the table below.
+    //
+    //       Record   Sources included
+    //       ------   ----------------
+    //       TO_IN    All in the current interface state that must be forwarded
+    //       TO_EX    All in the current interface state that must be blocked
+
+    Vector<IPAddress> dead_addresses;
+    IgmpV3MembershipReport report;
+    for (auto iterator = state_change_transmission_counts.begin(); iterator != state_change_transmission_counts.end(); iterator++)
+    {
+        auto record_ptr = filter.get_record_or_null(iterator.key());
+        IgmpFilterRecord record;
+        if (record_ptr == nullptr)
+        {
+            record.filter_mode = IgmpFilterMode::Include;
+        }
+        else
+        {
+            record = *record_ptr;
+        }
+        report.group_records.push_back(IgmpV3GroupRecord(iterator.key(), record, true));
+
+        auto &val = iterator.value();
+        if (--val <= 0)
+        {
+            dead_addresses.push_back(iterator.key());
+        }
+    }
+    for (const auto &address : dead_addresses)
+    {
+        state_change_transmission_counts.erase(address);
+    }
+    return report;
 }
 
 void IgmpGroupMember::transmit_membership_report(const IgmpV3MembershipReport &report)
@@ -268,6 +408,11 @@ void IgmpGroupMember::IgmpGroupQueryResponse::operator()() const
 
     // And transmit it.
     elem->transmit_membership_report(report);
+}
+
+void IgmpGroupMember::IgmpTransmitStateChanged::operator()() const
+{
+    elem->transmit_membership_report(elem->pop_state_changed_report());
 }
 
 CLICK_ENDDECLS
