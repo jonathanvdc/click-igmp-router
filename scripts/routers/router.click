@@ -25,18 +25,18 @@ elementclass Router {
 	// IgmpRouter/IgmpIpRouter do that for just one network. So we'll create three.
 
 	// TODO: are these addresses correct? Do they matter?
-	igmp_server :: IgmpIpRouter($server_address:ip);
+	igmp_multicast_server :: IgmpIpRouter($server_address:ip);
 	igmp_client1 :: IgmpIpRouter($server_address:ip);
 	igmp_client2 :: IgmpIpRouter($server_address:ip);
 
 	igmp_in_switch :: PaintSwitch;
 	igmp_in_switch[0] -> Discard;
-	igmp_in_switch[1] -> igmp_server;
+	igmp_in_switch[1] -> igmp_multicast_server;
 	igmp_in_switch[2] -> igmp_client1;
 	igmp_in_switch[3] -> igmp_client2;
 
 	igmp_in_tee :: Tee(5);
-	igmp_in_tee[0] -> [1]igmp_server;
+	igmp_in_tee[0] -> [1]igmp_multicast_server;
 	igmp_in_tee[1] -> [1]igmp_client1;
 	igmp_in_tee[2] -> [1]igmp_client2;
 	igmp_in_tee[3] -> igmp_in_switch;
@@ -49,7 +49,7 @@ elementclass Router {
 			$client1_address:ipnet 2,
 			$client2_address:ipnet 3);
 
-	igmp_server[1] -> rt;
+	igmp_multicast_server[1] -> rt;
 	igmp_client1[1] -> rt;
 	igmp_client2[1] -> rt;
 
@@ -68,7 +68,7 @@ elementclass Router {
 		-> ARPResponder($server_address)
 		-> output;
 
-	igmp_server
+	igmp_multicast_server
 		-> server_arpq :: ARPQuerier($server_address)
 		-> output;
 
