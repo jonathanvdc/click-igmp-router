@@ -30,19 +30,11 @@ int IgmpGroupMember::configure(Vector<String> &conf, ErrorHandler *errh)
 
 void IgmpGroupMember::push_listen(const IPAddress &multicast_address, const IgmpFilterRecord &record)
 {
-    if (!filter.listen(multicast_address, record))
-    {
-        // The mode wasn't changed.
-        return;
-    }
-
-    click_chatter("IGMP group member: changing mode for %s", multicast_address.unparse().c_str());
-
     // Here's a relevant excerpt from the spec:
     //
     //    An invocation of IPMulticastListen may cause the multicast reception
     //    state of an interface to change, according to the rules in section
-    //    3.2.  Each such change affects the per-interface entry for a single
+    //    3.2. Each such change affects the per-interface entry for a single
     //    multicast address.
     //
     //    A change of interface state causes the system to immediately transmit
@@ -68,6 +60,17 @@ void IgmpGroupMember::push_listen(const IPAddress &multicast_address, const Igmp
     //    one or more multicast routers, it is retransmitted [Robustness
     //    Variable] - 1 more times, at intervals chosen at random from the
     //    range (0, [Unsolicited Report Interval]).
+    //
+    // SPEC INTERPRETATION: when the state does _not_ change following a IPMulticastListen
+    // call, the member does _not_ have a valid reason to issue a state-changed report.
+
+    if (!filter.listen(multicast_address, record))
+    {
+        // The state hasn't changed.
+        return;
+    }
+
+    click_chatter("IGMP group member: changing mode for %s", multicast_address.unparse().c_str());
 
     auto retransmission_count_ptr = state_change_transmission_counts.findp(multicast_address);
     if (retransmission_count_ptr == nullptr)
