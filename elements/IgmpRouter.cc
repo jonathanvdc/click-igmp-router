@@ -430,9 +430,9 @@ void IgmpRouter::SendPeriodicGeneralQuery::operator()() const
 
     // Reschedule the General Query timer.
     auto interval = elem->filter.get_router_variables().get_query_interval();
+    elem->startup_general_queries_remaining--;
     if (elem->startup_general_queries_remaining > 0)
     {
-        elem->startup_general_queries_remaining--;
         interval = elem->filter.get_router_variables().get_startup_query_interval();
     }
     elem->general_query_timer.reschedule_after_dsec(interval);
