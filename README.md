@@ -1,6 +1,8 @@
 
 # Click IGMPv3 protocol implementation
 
+[![Build Status](https://travis-ci.org/jonathanvdc/click-igmp-router.svg?branch=master)](https://travis-ci.org/jonathanvdc/click-igmp-router)
+
 This (partial) IGMPv3 protocol implementation is my project for the Telecommunication Systems course at the University of Antwerp. It implements both router and client elements, which are also used in the `scripts/*` scripts.
 
 ## Building the protocol implementation
