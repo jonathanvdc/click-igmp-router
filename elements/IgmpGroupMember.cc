@@ -40,6 +40,15 @@ void IgmpGroupMember::push_listen(const IPAddress &multicast_address, const Igmp
 
 void IgmpGroupMember::transmit_membership_report(const IgmpV3MembershipReport &report)
 {
+    // Well-hidden paragraph from the spec:
+    //
+    //     If the resulting Current-State Record has an empty set of source
+    //     addresses, then no response is sent.
+    if (report.group_records.size() == 0)
+    {
+        return;
+    }
+
     size_t tailroom = 0;
     size_t packetsize = report.get_size();
     size_t headroom = sizeof(click_ether) + sizeof(click_ip);
@@ -185,7 +194,7 @@ void IgmpGroupMember::accept_query(const IgmpMembershipQuery &query)
         assert(response_timer_ptr != nullptr);
         response_timer_ptr->initialize(this);
     }
-    if (!response_timer_ptr->scheduled() && response_timer_ptr->remaining_time_csec() <= response_delay)
+    if (!response_timer_ptr->scheduled() && response_timer_ptr->remaining_time_csec() <= response_delay && query.source_addresses.size() == 0)
     {
         // Cases #3 and #4. Schedule a group-specific query, but only if that speeds
         // up our response.
@@ -221,7 +230,7 @@ void IgmpGroupMember::IgmpGeneralQueryResponse::operator()() const
         report.group_records.push_back(IgmpV3GroupRecord(iterator.key(), iterator.value(), false));
     }
 
-    // And transmit it.
+    // Transmit the report.
     elem->transmit_membership_report(report);
 }
 
@@ -243,14 +252,19 @@ void IgmpGroupMember::IgmpGroupQueryResponse::operator()() const
     auto record_ptr = elem->filter.get_record_or_null(group_address);
     if (record_ptr == nullptr)
     {
-        IgmpFilterRecord record;
-        record.filter_mode = IgmpFilterMode::Include;
-        report.group_records.push_back(IgmpV3GroupRecord(group_address, record, false));
+        // Well-hidden paragraph from the spec:
+        //
+        //     If the resulting Current-State Record has an empty set of source
+        //     addresses, then no response is sent.
+        //
+        // I think this can be interpreted as: "if a group member's state for a multicast address
+        // is 'mode-is-include({})'", then don't transmit anything. My reasoning for doing so is
+        // that 'mode-is-include({})' really does have an empty set of source addresses.
+
+        return;
     }
-    else
-    {
-        report.group_records.push_back(IgmpV3GroupRecord(group_address, *record_ptr, false));
-    }
+
+    report.group_records.push_back(IgmpV3GroupRecord(group_address, *record_ptr, false));
 
     // And transmit it.
     elem->transmit_membership_report(report);
