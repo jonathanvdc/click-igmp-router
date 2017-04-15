@@ -62,6 +62,23 @@ class CallbackTimer final
         }
     }
 
+    /// Reschedules the timer to fire after the given amount of centiseconds
+    /// past the previous expiration time.
+    void reschedule_after_csec(uint32_t delta_csec)
+    {
+        reschedule_after_msec(delta_csec * 100);
+    }
+
+    /// Reschedules the timer to fire after the given amount of milliseconds
+    /// past the previous expiration time.
+    void reschedule_after_msec(uint32_t delta_msec)
+    {
+        if (timer->initialized())
+        {
+            timer->reschedule_after_msec(delta_msec);
+        }
+    }
+
     /// Gets the amount of time remaining until this timer fires, in milliseconds.
     uint32_t remaining_time_msec() const
     {
