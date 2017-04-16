@@ -59,6 +59,7 @@ elementclass IgmpIpRouter {
 		-> IPPrint("IGMP router: accepting IGMP packet")
 		-> MarkIPHeader
 		-> StripIPHeader
+		-> checksum_check :: IgmpCheckChecksum
 		-> [1]igmp;
 
 	// At best, forward the packet. Don't read IGMP packets from this source.
@@ -73,5 +74,18 @@ elementclass IgmpIpRouter {
 	// that. Instead, we'll just discard it and wait for the same packet to arrive from
 	// 'input[1]'.
 	ip_classifier[1]
+		-> Discard;
+
+	// The spec's not all that clear on what we should do with IGMP packets that have invalid checksums.
+	// All it says is:
+	//
+	//     [...] When receiving packets, the checksum MUST be verified before processing a packet.
+	//
+	// But that's not very helpful.
+	//
+	// SPEC INTERPRETATION: we should ignore IGMP packets with invalid checksums and assume that they have
+	// been corrupted over the course of their transmission.
+	checksum_check[1]
+		-> Print("IGMP router: ignoring IGMP packet with invalid checksum.")
 		-> Discard;
 }

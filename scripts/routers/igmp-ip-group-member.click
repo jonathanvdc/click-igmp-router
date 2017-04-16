@@ -39,9 +39,23 @@ elementclass IgmpIpGroupMember {
 		// sent to the router as raw IGMP packets.
 		-> IPPrint("IGMP router: accepting IGMP packet")
 		-> StripIPHeader
+		-> checksum_check :: IgmpCheckChecksum
 		-> [1]igmp;
 
 	// Tests if the host is interested in this packet.
 	ip_classifier[1]
 		-> [0]igmp;
+
+	// The spec's not all that clear on what we should do with IGMP packets that have invalid checksums.
+	// All it says is:
+	//
+	//     [...] When receiving packets, the checksum MUST be verified before processing a packet.
+	//
+	// But that's not very helpful.
+	//
+	// SPEC INTERPRETATION: we should ignore IGMP packets with invalid checksums and assume that they have
+	// been corrupted over the course of their transmission.
+	checksum_check[1]
+		-> Print("IGMP group memmber: ignoring IGMP packet with invalid checksum.")
+		-> Discard;
 }
