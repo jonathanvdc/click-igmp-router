@@ -11,7 +11,8 @@ elementclass IgmpIpEncap {
 	// (e.g., Type of Service 0xc0), and carries an IP Router Alert option
 	// [RFC-2113] in its IP header.
 
-	// TODO: set the IP Router Alert option
+	// TODO: set the IP Router Alert option. But how? Click doesn't appear to
+	// have an element or a function that sets the router alert option.
 
 	input
 		-> IPEncap(igmp, $src_ip, DST_ANNO, TTL 1, TOS 0xc0)

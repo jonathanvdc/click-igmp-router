@@ -24,7 +24,6 @@ elementclass Router {
 	//
 	// IgmpRouter/IgmpIpRouter do that for just one network. So we'll create three.
 
-	// TODO: are these addresses correct? Do they matter?
 	igmp_multicast_server :: IgmpIpRouter($server_address:ip);
 	igmp_client1 :: IgmpIpRouter($client1_address:ip);
 	igmp_client2 :: IgmpIpRouter($client2_address:ip);

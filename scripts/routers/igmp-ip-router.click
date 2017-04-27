@@ -32,7 +32,6 @@ elementclass IgmpIpRouter {
 		-> frag :: IPFragmenter(1500)
 		-> [0]output;
 
-	// TODO: should ICMP errors be sent when IGMP is in use?
 	ipgw[1]
 		-> ICMPError($src_ip, parameterproblem)
 		-> [1]output;
