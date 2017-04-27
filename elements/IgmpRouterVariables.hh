@@ -158,7 +158,7 @@ struct IgmpRouterVariables
     /// Response Interval] must be less than the [Query Interval].
     unsigned int &get_query_response_interval()
     {
-        return core_variables.query_interval;
+        return core_variables.query_response_interval;
     }
 
     /// The Last Member Query Interval is the Max Response Time used to
